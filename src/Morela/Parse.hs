@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Erd.Parse
+module Morela.Parse
   ( loadER
   )
 where
 
-import           Erd.ER
+import           Morela.Types
 
 import           Control.Monad          (when)
 import           Data.List              (find)
@@ -13,7 +13,7 @@ import           Data.Text.Lazy         hiding (find, map, reverse)
 import           Data.Text.Lazy.IO
 import           System.IO              (Handle)
 import           Text.Parsec
-import           Text.Parsec.Erd.Parser (AST (..), GlobalOptions (..), document)
+import           Text.Parsec.Morela.Parser (AST (..), GlobalOptions (..), document)
 import           Text.Printf            (printf)
 
 loadER :: String -> Handle -> IO (Either String ER)

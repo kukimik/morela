@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Erd.ER
+module Morela.Types
   ( ER(..)
   , Entity(..)
   , Attribute(..)
@@ -41,10 +41,12 @@ instance Ord Entity where
   e1 `compare` e2 = name e1 `compare` name e2
 
 -- | Represents a single attribute in a particular entity.
-data Attribute = Attribute
+data Attribute = Separator | Attribute
     { field    :: Text
+    , datatype :: Maybe Text
     , pk       :: Bool
     , fk       :: Bool
+    , nn       :: Bool
     , aoptions :: Options
     }
     deriving (Show, Eq)
@@ -184,8 +186,8 @@ defaultHeaderOpts = M.fromList
 -- | Hard-coded default options for all entities.
 defaultEntityOpts :: Options
 defaultEntityOpts = M.fromList
-  [ ("border", Border 0)
-  , ("cellborder", CellBorder 1)
+  [ ("border", Border 1)
+  , ("cellborder", CellBorder 0)
   , ("cellspacing", CellSpacing 0)
   , ("cellpadding", CellPadding 4)
   , ("font", FontFace "Helvetica")

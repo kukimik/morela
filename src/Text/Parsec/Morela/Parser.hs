@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.Parsec.Erd.Parser
+module Text.Parsec.Morela.Parser
   ( AST(..),
     GlobalOptions(..),
     document,
@@ -11,7 +11,7 @@ module Text.Parsec.Erd.Parser
     comment
   ) where
 
-import           Erd.ER
+import           Morela.Types
 
 import           Control.Monad         (liftM2, void, when)
 import           Data.Char             (isAlphaNum, isControl, isSpace)
@@ -45,6 +45,7 @@ document = do skipMany (comment <|> blanks)
               return (opts, ast)
   where top = (entity <?> "entity declaration")
               <|> (try rel <?> "relationship") -- must come before attr
+              <|> (try sep <?> "separator")
               <|> (try attr <?> "attribute")
               <|> (comment <?> "comment")
               <|> blanks
@@ -58,16 +59,24 @@ entity = do n <- between (char '[') (char ']') ident
             return $ Just $ E Entity { name = n, attribs = [],
                                        hoptions = opts, eoptions = opts }
 
+sep :: Parser (Maybe AST)
+sep = do
+  spacesNoNew
+  _ <- string "--"
+  eolComment
+  return $ Just $ A Separator
+
 attr :: Parser (Maybe AST)
 attr = do
-  keys <- many $ oneOf "*+ \t"
-  let (ispk, isfk) = ('*' `elem` keys, '+' `elem` keys)
+  keys <- many $ oneOf "*+! \t"
+  let (ispk, isfk, isnn) = ('*' `elem` keys, '+' `elem` keys, '!' `elem` keys)
   n <- ident
+  dt <- option Nothing (Just <$> ident)
   opts <- options
   eolComment
   return
     $ Just
-    $ A Attribute {field = n, pk = ispk, fk = isfk, aoptions = opts <> defaultAttrOpts}
+    $ A Attribute {field = n, datatype = dt, pk = ispk, fk = isfk, nn = isnn, aoptions = opts <> defaultAttrOpts}
 
 rel :: Parser (Maybe AST)
 rel = do

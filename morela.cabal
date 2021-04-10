@@ -1,0 +1,49 @@
+name:                morela
+version:             0.0.0.0
+homepage:            https://github.com/kukimik/morela
+license:             PublicDomain
+license-file:        UNLICENSE
+author:              Michał Kukieła
+maintainer:          kukimik@poczta.onet.pl
+category:            Database, Development
+build-type:          Simple
+cabal-version:       >=1.10
+
+Tested-With:         GHC ==8.6.4 || ==8.4.4 || ==8.8.3 || ==8.10.1
+
+synopsis:
+  A relational database schema diagram generator from a plain text description.
+description:
+  morela transforms a plain text description of a relational database schema
+  (including tables, their attributes and integrity constraints) to a
+  graphical representation of that schema.
+
+extra-source-files:
+    Changelog.md
+
+source-repository head
+  type: git
+  location: git://github.com/kukimik/morela.git
+
+executable morela
+  default-language: Haskell2010
+  hs-source-dirs: app, src
+  other-modules: Morela.Config
+               , Morela.Types
+               , Morela.Parse
+               , Morela.Render
+               , Paths_morela
+               , Text.Parsec.Morela.Parser
+  main-is: Main.hs
+  ghc-options: -Wall -W
+  build-depends: base >= 4.5 && <5
+               , directory >= 1.3.1.5
+               , filepath >= 1.4.2
+               , gitrev >= 1.3.1
+               , graphviz >= 2999.20.0.4
+               , text == 1.*
+               , parsec == 3.1.*
+               , containers >= 0.5.11.0
+               , bytestring == 0.10.*
+               , yaml >= 0.8.32
+               , raw-strings-qq >= 1.1

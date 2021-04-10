@@ -19,10 +19,10 @@ import qualified Data.GraphViz.Attributes.HTML       as H
 import qualified Data.GraphViz.Types.Generalised     as G
 import           Data.GraphViz.Types.Monadic
 
-import           Erd.Config
-import           Erd.ER
-import           Erd.Parse
-import           Erd.Render                          (htmlAttr, htmlFont,
+import           Morela.Config
+import           Morela.Types
+import           Morela.Parse
+import           Morela.Render                          (htmlAttr, htmlFont,
                                                       recordAttr, withLabelFmt)
 
 main :: IO ()
@@ -72,11 +72,11 @@ dotER conf er = graph' $ do
 htmlEntity :: Entity -> H.Label
 htmlEntity e = H.Table H.HTable
                  { H.tableFontAttrs = Just $ optionsTo optToFont $ eoptions e
-                 , H.tableAttrs = optionsTo optToHtml (eoptions e)
+                 , H.tableAttrs = (optionsTo optToHtml (eoptions e)) -- ++ [H.Style H.Rounded]
                  , H.tableRows = rows
                  }
-  where rows = headerRow : map htmlAttr (attribs e)
-        headerRow = H.Cells [H.LabelCell [] $ H.Text text]
+  where rows = headerRow : H.HorizontalRule : map htmlAttr (attribs e)
+        headerRow = H.Cells [H.LabelCell [H.ColSpan 2] $ H.Text text]
         text = withLabelFmt " [%s]" (hoptions e) $ boldFont hname
         hname = htmlFont (hoptions e) (name e)
         boldFont s = [H.Format H.Bold s]

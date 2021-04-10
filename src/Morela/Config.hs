@@ -2,7 +2,7 @@
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Erd.Config
+module Morela.Config
   ( Config(..)
   , configIO
   , defaultConfig
@@ -23,7 +23,7 @@ import           Data.Version                      (showVersion)
 import           Data.Yaml                         (FromJSON (..), (.:))
 import qualified Data.Yaml                         as Y
 import           Development.GitRev                (gitHash)
-import           Paths_erd                         (version)
+import           Paths_morela                      (version)
 import qualified System.Console.GetOpt             as O
 import           System.Directory                  (getHomeDirectory)
 import           System.Environment                (getArgs)

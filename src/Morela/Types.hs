@@ -11,6 +11,7 @@ module Morela.Types
 where
 
 import qualified Data.Map                        as M
+import qualified Data.Set                        as S
 import           Data.Maybe                      (mapMaybe)
 import           Data.Text.Lazy
 import           Data.Word                       (Word8)
@@ -20,7 +21,79 @@ import           Data.GraphViz.Attributes.Colors (Color)
 import qualified Data.GraphViz.Attributes.HTML   as H
 import           Data.GraphViz.Parsing           (ParseDot, parse, runParser)
 
--- | Represents a single schema.
+
+type AttributeName = Text
+type ConstraintName = Text
+type StyleName = Text
+type TableName = Text
+type TypeName = Text
+type Comment = Text
+type SQLCondition = Text
+
+data Attribute
+  {
+   attributeName      :: AttributeName
+  ,attributeType      :: TypeName
+  ,attributeComment   :: Comment
+  ,attributeStyleName :: Maybe StyleName
+  } deriving (Eq,Show)
+
+instance Ord Attribute where
+  a1 `compare` a2 = attributeName a1 `compare` attributeName a2
+
+data PKConstraint = PKConstraint
+  {
+   pkAttributeNames [AttributeName]
+  } deriving (Eq,Show)
+
+data FKConstraint = FKConstraint
+  {
+   fkReferencedTableName :: TableName
+  ,fkAttributeMapping :: [(AttributeName,AttributeName)]
+  ,fkStyleName :: StyleName
+  ,fkComment :: Comment
+  } deriving (Eq,Show)
+
+data CKConstraint = CKConstraint
+  {
+   ckSQLCondition :: SQLCondition
+  ,ckStyleName :: StyleName
+  ,ckComment :: Comment
+  } deriving (Eq,Show)
+
+data UQConstraint = UQConstraint
+  {
+   uqAttributeNames :: [AttributeName]
+  ,uqStyleName :: StyleName
+  ,uqComment :: Comment
+  } deriving (Eq,Show)
+
+data Table = Table
+  {
+   tableName :: TableName
+  ,tableAttributes :: [Attribute]
+  ,tableComment :: Comment
+  ,tablePK :: PKConstraint
+  ,tableCKs :: [CKConstraint]
+  ,tableUQs :: [UQConstraint]
+  ,tableFKs :: [FKConstraint]
+  } deriving (Eq,Show)
+
+instance Ord Table where
+  t1 `compare` t2 = tableName t1 `compare` tableName t2
+
+data Style = Style -- TODO!
+  --{ --???
+  -- someName :: Maybe (GraphvizAttribute SomeType)
+  --} deriving (Eq,Show)
+
+
+data Diagram = Diagram
+  {
+    diagramTables :: S.Set Table
+  , diagramStyles :: M.Map StyleName Style
+  } deriving (Eq,Show)
+
 data ER = ER
     { entities :: [Entity]
     , rels     :: [Relation]

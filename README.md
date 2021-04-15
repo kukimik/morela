@@ -1,14 +1,12 @@
-This utility takes a plain text description of relational database schema
-(including tables, their attributes and integrity constraints) and produces
-a visual diagram modeling the description. The visualization is produced 
-using GraphViz; `morela` can output graphs in a variety of formats, 
-including but not limited to: pdf, svg, eps, png, jpg, plain text and dot.
+`morela` transforms a plain text description of relational database schema
+(including tables, their attributes and integrity constraints) into a visual
+diagram modeling the description. The visualization is produced 
+using GraphViz.
 
-This project was inspired by (and parts of the code are based on) the
-[`erd`](http://github.com/BurntSushi/erd) tool by Andrew Gallant, which
-draws entity-relationship diagrams based on a plain text description.
+This project is based on the [`erd`](http://github.com/BurntSushi/erd) tool
+by Andrew Gallant.
 
-At present `morela` is still in early development phase and highly unstable.
+At present `morela` is in early development phase and highly unstable.
 
 ### Installation
 

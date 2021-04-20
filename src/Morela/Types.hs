@@ -30,7 +30,7 @@ type TypeName = Text
 type Comment = Text
 type SQLCondition = Text
 
-data Attribute
+data Attribute = Attribute
   {
    attributeName      :: AttributeName
   ,attributeType      :: TypeName
@@ -44,6 +44,11 @@ instance Ord Attribute where
 data PKConstraint = PKConstraint
   {
    pkAttributeNames [AttributeName]
+  } deriving (Eq,Show)
+
+data NNConstraint = NNConstraint
+  {
+   nnAttributeName :: AttributeName
   } deriving (Eq,Show)
 
 data FKConstraint = FKConstraint
@@ -74,6 +79,7 @@ data Table = Table
   ,tableAttributes :: [Attribute]
   ,tableComment :: Comment
   ,tablePK :: PKConstraint
+  ,tableNNs :: NNConstraint
   ,tableCKs :: [CKConstraint]
   ,tableUQs :: [UQConstraint]
   ,tableFKs :: [FKConstraint]

@@ -55,24 +55,43 @@ tableToHTMLLabel tab = H.Table H.HTable
                     <> fkRows
                  }
   where
-    headerRow = oneCellRow $ MR.tableName tab
     attributeRows = map (attributeRow (MR.tablePK tab) (MR.tableNNs tab)) $ MR.tableAttributes tab
     uqRows = map uqRow $ MR.tableUQs tab
     ckRows = map ckRow $ MR.tableCKs tab
     fkRows = map fkRow $ MR.tableFKs tab
 
 attributeRow :: MR.PKConstraint -> [MR.NNConstraints] -> MR.Attribute -> H.Row
-uqRow :: [MR.UQConstraint] -> H.Row
-uqRow uq = oneCellRow $ "UQ(" <> (L.intercalate "," (MR.uqAttributeNames uq)) <> ")"
-ckRow :: [MR.CKConstraint] -> H.Row
-ckRow ck = oneCellRow $ "CK(" <> (MR.ckSQLCondition ck) <> ")"
-fkRow :: [MR.FKConstraint] -> H.Row
+attributeRow attr =
+  H.Cells
+    [H.LabelCell $ [attributeName attr]
+    ,H.LabelCell $ [H.Str attributeType attr]
+    ]
+  where
 
+headerRow :: MR.TableName -> H.Row
+headerRow tabName = H.Cells [ H.LabelCell (H.ColSpan 2) $ addFormat H.Bold [H.Str txt] ]
 
-oneCellRow :: L.Text -> H.Row
-oneCellRow txt = H.Cells [H.LabelCell [H.ColSpan 2] $ H.Text txt]
+uqRow :: MR.UQConstraint -> H.Row
+uqRow uq = oneCellRow [] $ "UQ(" <> (toCSV (MR.uqAttributeNames uq)) <> ")"
 
-twoCellsRow :: L.Text -> L.Text -> H.Row
+ckRow :: MR.CKConstraint -> H.Row
+ckRow ck = oneCellRow [] $ "CK(" <> (MR.ckSQLCondition ck) <> ")"
+
+fkRow :: MR.FKConstraint -> H.Row
+fkRow fk = oneCellRow [H.Port $ fkToText fk ] $ fkToText fk
+
+fkToText :: MR.FKConstraint -> L.Text
+fkToText fk = "FK(" <> (toCSV c1) <> ") REFERENCES " <> (fkReferencedTableName fk) <> "(" <> (toCSV c2) <> ")"
+  where (c1,c2) = unzip $ fkAttributeMapping fk
+
+toCSV :: [L.Text] -> L.Text
+toCSV = L.intercalate ","
+
+oneCellRow :: H.Attributes -> L.Text -> H.Row
+oneCellRow cellAttr txt = H.Cells [ H.LabelCell (H.ColSpan 2):cellAttr $ [H.Str txt] ]
+
+addFormat :: H.Format -> H.Text
+addFormat f t = [H.Format f t]
 
 
   graph' $ do

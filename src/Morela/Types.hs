@@ -43,7 +43,7 @@ instance Ord Attribute where
 
 data PKConstraint = PKConstraint
   {
-   pkAttributeNames [AttributeName]
+   pkAttributeNames :: [AttributeName]
   } deriving (Eq,Show)
 
 data NNConstraint = NNConstraint
@@ -79,7 +79,7 @@ data Table = Table
   ,tableAttributes :: [Attribute]
   ,tableComment :: Comment
   ,tablePK :: PKConstraint
-  ,tableNNs :: NNConstraint
+  ,tableNNs :: [NNConstraint]
   ,tableCKs :: [CKConstraint]
   ,tableUQs :: [UQConstraint]
   ,tableFKs :: [FKConstraint]

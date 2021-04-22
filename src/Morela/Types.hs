@@ -34,7 +34,7 @@ data Attribute = Attribute
   {
    attributeName      :: AttributeName
   ,attributeType      :: TypeName
-  ,attributeComment   :: Comment
+  ,attributeComment   :: Maybe Comment
   ,attributeStyleName :: Maybe StyleName
   } deriving (Eq,Show)
 
@@ -43,7 +43,7 @@ instance Ord Attribute where
 
 data PKConstraint = PKConstraint
   {
-   pkAttributeNames :: [AttributeName]
+   pkAttributeNames :: [AttributeName] -- switch to NonEmpty
   } deriving (Eq,Show)
 
 data NNConstraint = NNConstraint
@@ -54,31 +54,31 @@ data NNConstraint = NNConstraint
 data FKConstraint = FKConstraint
   {
    fkReferencedTableName :: TableName
-  ,fkAttributeMapping :: [(AttributeName,AttributeName)]
-  ,fkStyleName :: StyleName
-  ,fkComment :: Comment
+  ,fkAttributeMapping :: [(AttributeName,AttributeName)] -- switch to NonEmpty
+  ,fkStyleName :: Maybe StyleName
+  ,fkComment :: Maybe Comment
   } deriving (Eq,Show)
 
 data CKConstraint = CKConstraint
   {
    ckSQLCondition :: SQLCondition
-  ,ckStyleName :: StyleName
-  ,ckComment :: Comment
+  ,ckStyleName :: Maybe StyleName
+  ,ckComment :: Maybe Comment
   } deriving (Eq,Show)
 
 data UQConstraint = UQConstraint
   {
-   uqAttributeNames :: [AttributeName]
-  ,uqStyleName :: StyleName
-  ,uqComment :: Comment
+   uqAttributeNames :: [AttributeName] -- switch to NonEmpty
+  ,uqStyleName :: Maybe StyleName
+  ,uqComment :: Maybe Comment
   } deriving (Eq,Show)
 
 data Table = Table
   {
    tableName :: TableName
   ,tableAttributes :: [Attribute]
-  ,tableComment :: Comment
-  ,tablePK :: PKConstraint
+  ,tableComment :: Maybe Comment
+  ,tablePK :: Maybe PKConstraint
   ,tableNNs :: [NNConstraint]
   ,tableCKs :: [CKConstraint]
   ,tableUQs :: [UQConstraint]
@@ -93,7 +93,6 @@ data Style = Style -- TODO!
   -- someName :: Maybe (GraphvizAttribute SomeType)
   --} deriving (Eq,Show)
 
-
 data Diagram = Diagram
   {
     diagramTables :: S.Set Table
@@ -107,6 +106,7 @@ data ER = ER
     }
     deriving (Show, Eq)
 
+{-
 -- | Represents a single entity in a schema.
 data Entity = Entity
     { name     :: Text
@@ -280,3 +280,4 @@ defaultAttrOpts :: Options
 defaultAttrOpts = M.fromList
   [ ("text-alignment", TextAlignment H.HLeft)
   ]
+-}

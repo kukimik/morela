@@ -13,21 +13,17 @@ import           System.Exit                         (exitFailure)
 import           System.IO                           (hClose, hPutStrLn, stderr)
 
 import           Data.GraphViz
-import qualified Data.GraphViz.Attributes.Colors.X11 as C
-import qualified Data.GraphViz.Attributes.Complete   as A
-import qualified Data.GraphViz.Attributes.HTML       as H
-import qualified Data.GraphViz.Types.Generalised     as G
-import           Data.GraphViz.Types.Monadic
 
 import           Morela.Config
 import           Morela.Types
 import           Morela.Parse
-import           Morela.Render                          (htmlAttr, htmlFont,
-                                                      recordAttr, withLabelFmt)
+import           Morela.Render(diagramToGraph)
 
 main :: IO ()
 main = do
   checkRequirements -- application may terminate here
+
+{-
   conf <- configIO
   er' <- uncurry loadER (cin conf)
   case er' of
@@ -97,9 +93,10 @@ graphTitle topts =
        , A.LabelLoc A.VTop
        , A.Label $ A.HtmlLabel $ H.Text $ htmlFont topts (head glabel)
        ]
+-}
 
 checkRequirements :: IO ()
 checkRequirements = (isGraphvizInstalled >>= guard) <|> quitWithoutGraphviz msg
   where
     msg = "GraphViz is not installed on your system.\n" ++
-          "Please install it first, https://github.com/BurntSushi/erd"
+          "Please install it first. https://github.com/kukimik/morela"

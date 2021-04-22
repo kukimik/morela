@@ -1,11 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Morela.Render
-  (htmlAttr,
-   htmlFont,
-   recordAttr,
-   withLabelFmt
-  ) where
+  (diagramToDotGraph) where
 
 import           Control.Monad                     (forM_, mapM_)
 import qualified Morela.Types                      as MR
@@ -18,11 +14,10 @@ import           Data.GraphViz.Types.Monadic         as T
 
 import qualified Data.Text.Lazy                    as L
 import           Text.Printf                       (printf)
-import           Data.Maybe                        (fromMaybe)
+import           Data.Maybe                        (fromMaybe,maybeToList)
+import           Data.Set as Set (fromList)
 
-
-
-diagramToDotGraph :: MR.Morela -> G.DotGraph L.Text
+diagramToDotGraph :: MR.Diagram -> G.DotGraph L.Text
 diagramToDotGraph = T.digraph' . (mapM_ tableToDot) . diagramTables
 
 tableToDot :: MR.Table -> G.Dot L.Text
@@ -37,55 +32,110 @@ tableToEdges tab =
     (constraintsToEdge (MR.tableNNs tab) (MR.tableUQs tab) (MR.tablePK tab))
     (MR.tableFKs tab)
 
-constraintsToEdge :: MR.TableName -> [MR.NNConstraint] -> [MR.UQConstraint] -> MR.PKConstraint -> MR.FKConstraint -> G.Dot L.Text
-constraintsToEdge tabName nns uqs pks fk = edge .........
-
-
+constraintsToEdge ::
+     MR.TableName
+  -> [MR.NNConstraint]
+  -> [MR.UQConstraint]
+  -> MR.PKConstraint
+  -> MR.FKConstraint
+  -> G.Dot L.Text
+constraintsToEdge tabName nns uqs pk fk =
+  edge
+    tabName
+    (fkReferencedTableName fk)
+    [A.Dir Both
+    ,A.ArrowHead $ A.AType [(A.noMods, A.Normal)]
+    ,A.ArrowTail $ A.AType [(A.noMods, arrowTailType)]
+    -- ,A.HeadPort () -- opracuj jak to ładnie zrobić, żeby się do odpowiednich więzów doklejało! zmiana typów...
+    ,A.TailPort $ A.LabelledPort (prefix tabName $ fkToText fk) Nothing
+    ,A.Style [A.SItem edgeStyle []]
+    ]
+  where
+    attrs = Set.fromList . fst . fkAttributeMapping $ fk
+    pkAttrs = Set.fromList $ pkAttributeNames pks
+    nnAttrs = Set.fromList $ fmap nnAttributeName nns
+    uqsAttrs = fmap (Set.fromList . uqAttributeNames) uqs
+    isNN = attrs `Set.isSubsetOf` (pkAttrs `union` nnAttrs)
+    isUQ = (`Set.isSubsetOf` attrs) `any` (pkAttrs:uqsAttrs)
+    arrowTailType
+      | isUQ = A.NoArrow
+      | otherwise = A.Crow
+    edgeStyle
+      | isNN = A.Solid
+      | otherwise = A.Dashed
 
 tableToHTMLLabel :: MR.Table -> H.Label
 tableToHTMLLabel tab = H.Table H.HTable
                  { H.tableFontAttrs = Nothing
-                 , H.tableAttrs = []
+                 , H.tableAttrs = [H.CellBorder 0, H.Border 1]
                  , H.tableRows =
-                       [headerRow]
+                       [headerRow $ MR.tableName tab]
                     <> attributeRows
                     <> [H.HorizontalRule]
+                    <> pkRows
                     <> uqRows
                     <> ckRows
                     <> fkRows
                  }
   where
     attributeRows = map (attributeRow (MR.tablePK tab) (MR.tableNNs tab)) $ MR.tableAttributes tab
-    uqRows = map uqRow $ MR.tableUQs tab
+    pkRows = map (pkRow $ MR.tableName tab) $ maybeToList (MR.tablePK tab)
+    uqRows = map (uqRow $ MR.tableName tab) $ MR.tableUQs tab
     ckRows = map ckRow $ MR.tableCKs tab
-    fkRows = map fkRow $ MR.tableFKs tab
+    fkRows = map (fkRow $ MR.tableName tab) $ MR.tableFKs tab
 
 attributeRow :: MR.PKConstraint -> [MR.NNConstraints] -> MR.Attribute -> H.Row
-attributeRow attr =
+attributeRow pk nns attr =
   H.Cells
-    [H.LabelCell $ [attributeName attr]
+    [H.LabelCell
+      $ maybeAddFormat pkFormat
+      $ maybeAddFormat nnFormat
+      $ [H.Str attrName]
     ,H.LabelCell $ [H.Str attributeType attr]
     ]
   where
+    attrName = attributeName attr
+    isPK = attrName `elem` pkAttributeNames pk
+    isNN = isPK || (attrName `elem`) `any` (map nnAttributeNames nns)
+    pkFormat
+      | isPK = Just H.Underline
+      | otherwise = Nothing
+    nnFormat =
+      | isPK = Just Just H.Bold
+      | otherwise = Nothing
 
 headerRow :: MR.TableName -> H.Row
 headerRow tabName = H.Cells [ H.LabelCell (H.ColSpan 2) $ addFormat H.Bold [H.Str txt] ]
 
-uqRow :: MR.UQConstraint -> H.Row
-uqRow uq = oneCellRow [] $ "UQ(" <> (toCSV (MR.uqAttributeNames uq)) <> ")"
+pkRow :: MR.TableName -> MR.PKConstraint -> H.Row
+pkRow tn pk oneCellRow [H.Port $ prefixTableName tn txt ] $ txt
+  where txt = pkToText pk
+
+pkToText :: MR.PKConstraint -> L.Text
+pkToText pk = "PK(" <> (toCSV (MR.pkAttributeNames pk)) <> ")"
+
+uqRow :: MR.TableName -> MR.UQConstraint -> H.Row
+uqRow tn uq = oneCellRow [H.Port $ prefixTableName tn txt ] $ txt -- add table name to port name! (or maybe better unique table id?)
+
+uqToText :: MR.PKConstraint -> L.Text
+uqToText uq = "UQ(" <> (toCSV (MR.uqAttributeNames pk)) <> ")"
 
 ckRow :: MR.CKConstraint -> H.Row
 ckRow ck = oneCellRow [] $ "CK(" <> (MR.ckSQLCondition ck) <> ")"
 
-fkRow :: MR.FKConstraint -> H.Row
-fkRow fk = oneCellRow [H.Port $ fkToText fk ] $ fkToText fk
+fkRow :: MR.TableName -> MR.FKConstraint -> H.Row
+fkRow tn fk = oneCellRow [H.Port $ prefixTableName tn txt ] $ txt -- add table name to port name! (or maybe better unique table id?)
+  where txt = fkToText fk
 
 fkToText :: MR.FKConstraint -> L.Text
-fkToText fk = "FK(" <> (toCSV c1) <> ") REFERENCES " <> (fkReferencedTableName fk) <> "(" <> (toCSV c2) <> ")"
-  where (c1,c2) = unzip $ fkAttributeMapping fk
+fkToText fk = "FK(" <> (toCSV a1) <> ") REFERENCES " <> (fkReferencedTableName fk) <> "(" <> (toCSV a2) <> ")"
+  where (a1,a2) = unzip $ fkAttributeMapping fk
 
 toCSV :: [L.Text] -> L.Text
 toCSV = L.intercalate ","
+
+prefixTableName :: MR.TableName -> L.Text -> L.Text
+prefixTableName tabName txt = tabName <> "." <> txt
 
 oneCellRow :: H.Attributes -> L.Text -> H.Row
 oneCellRow cellAttr txt = H.Cells [ H.LabelCell (H.ColSpan 2):cellAttr $ [H.Str txt] ]
@@ -93,7 +143,11 @@ oneCellRow cellAttr txt = H.Cells [ H.LabelCell (H.ColSpan 2):cellAttr $ [H.Str 
 addFormat :: H.Format -> H.Text
 addFormat f t = [H.Format f t]
 
+maybeAddFormat :: Maybe H.Format -> H.Text
+maybeAddFormat (Just f) = addFormat f
+maybeAddFormat Nothing = id
 
+{-
   graph' $ do
   graphAttrs (graphTitle $ title er)
   graphAttrs [ A.RankDir A.FromLeft
@@ -171,3 +225,4 @@ withLabelFmt fmt opts s =
   case ER.optionsTo ER.optToLabel opts of
     (x:_) -> s ++ htmlFont opts (L.pack $ printf fmt $ L.unpack x)
     _     -> s
+-}

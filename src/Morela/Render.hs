@@ -91,9 +91,10 @@ attributeRow pk nns attr =
       $ maybeAddFormat pkFormat
       $ maybeAddFormat nnFormat
       $ [H.Str attrName]
-    ,H.LabelCell $ [H.Str attributeType attr]
+    ,H.LabelCell $ [H.Str attrType]
     ]
   where
+    attrType = fromMaybe "(?)" (attributeType attr)
     attrName = attributeName attr
     isPK = attrName `elem` pkAttributeNames pk
     isNN = isPK || (attrName `elem`) `any` (map nnAttributeNames nns)

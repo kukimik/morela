@@ -33,7 +33,7 @@ type SQLCondition = Text
 data Attribute = Attribute
   {
    attributeName      :: AttributeName
-  ,attributeType      :: TypeName
+  ,attributeType      :: Maybe TypeName
   ,attributeComment   :: Maybe Comment
   ,attributeStyleName :: Maybe StyleName
   } deriving (Eq,Show)

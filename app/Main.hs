@@ -14,7 +14,7 @@ import           System.IO                           (hClose, hPutStrLn, stderr)
 
 import           Data.GraphViz
 
-import           Morela.Config
+--import           Morela.Config
 import           Morela.Types
 import           Morela.Parse
 import           Morela.Render(diagramToGraph)

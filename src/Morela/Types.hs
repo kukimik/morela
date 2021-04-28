@@ -10,6 +10,7 @@ module Morela.Types
   )
 where
 
+import Control.Applicative(empty)
 import qualified Data.Map                        as M
 import qualified Data.Set                        as S
 import           Data.Maybe                      (mapMaybe)
@@ -76,7 +77,7 @@ data UQConstraint = UQConstraint
 data Table = Table
   {
    tableName :: TableName
-  ,tableAttributes :: [Attribute]
+  ,tableAttributes :: [Attribute] -- TODO: change this and other lists to sequences (or non-empty sequences)
   ,tableComment :: Maybe Comment
   ,tablePK :: Maybe PKConstraint
   ,tableNNs :: [NNConstraint]
@@ -105,6 +106,23 @@ data ER = ER
     , title    :: Options
     }
     deriving (Show, Eq)
+
+emptyDiagram :: Diagram
+emptyDiagram = Diagram {diagramTables = S.empty, diagramStyles = M.empty}
+
+emptyTable :: TableName -> Table
+emptyTable tn =
+  Table
+    {
+     tableName = tn
+    ,tableAttributes = empty
+    ,tableComment = empty
+    ,tablePK = empty
+    ,tableNNs = empty
+    ,tableCKs = empty
+    ,tableUQs = empty
+    ,tableFKs = empty
+    }
 
 {-
 -- | Represents a single entity in a schema.

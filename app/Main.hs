@@ -4,19 +4,12 @@ module Main
   (main)
 where
 
-import           Control.Applicative                 ((<|>))
-import           Control.Monad                       (forM_, guard)
 import qualified Data.ByteString                     as SB
-import           Data.Maybe                          (fromJust, fromMaybe)
-import qualified Data.Text.Lazy                      as L
+import           Data.Graphviz.Commands
 import           System.Exit                         (exitFailure)
 import           System.IO                           (hClose, hPutStrLn, stderr)
 
-import           Data.GraphViz
-
---import           Morela.Config
-import           Morela.Types
-import           Morela.Parse
+import           Morela.Parse(document)
 import           Morela.Render(diagramToGraph)
 
 main :: IO ()
@@ -96,7 +89,7 @@ graphTitle topts =
 -}
 
 checkRequirements :: IO ()
-checkRequirements = (isGraphvizInstalled >>= guard) <|> quitWithoutGraphviz msg
+checkRequirements = quitWithoutGraphviz msg
   where
     msg = "GraphViz is not installed on your system.\n" ++
           "Please install it first. https://github.com/kukimik/morela"

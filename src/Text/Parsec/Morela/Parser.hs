@@ -1,33 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Text.Parsec.Morela.Parser
-  ( AST(..),
-    GlobalOptions(..),
-    document,
-    globalOptions,
-    entity,
-    rel,
-    attr,
-    comment
-  ) where
+  ( AST(..), document ) where
 
 import           Morela.Types
 
-import           Control.Monad         (liftM2, void, when)
+import           Control.Monad         (void, when)
 import           Data.Char             (isAlphaNum, isControl, isSpace)
-import qualified Data.Map              as M
 import           Data.Maybe
 import           Data.Text.Lazy
 import           Text.Parsec
 import           Text.Parsec.Text.Lazy
-import           Text.Printf           (printf)
 
 data AST =
       T { tName :: TableName}
     | A { aName :: AttributeName, aTypeName :: Maybe TypeName, aIsPK :: Bool, aIsNN :: Bool }
     | U { uAttributeNames :: [AttributeName] }
     | F { fReferencedTableName :: TableName, fAttributeNames1 :: [AttributeName], fAttributeNames2 :: [AttributeName]}
-    | C { cSQLCondition }
+    | C { cSQLCondition :: SQLCondition }
     deriving (Show, Eq)
 
 document :: Parser [AST]
@@ -61,7 +51,7 @@ attribute = do
 checkConstraint :: Parser (Maybe AST)
 checkConstraint = do
   string "&CK"
-  blanks
+  spacesNoNew
   c <- identQuoted
   eolComment
   return
@@ -71,7 +61,7 @@ checkConstraint = do
 uniqueConstraint :: Parser (Maybe AST)
 uniqueConstraint = do
   string "&UQ"
-  blanks
+  spacesNoNew
   as <- attributesList
   eolComment
   return
@@ -81,18 +71,18 @@ uniqueConstraint = do
 foreignKeyConstraint :: Parser (Maybe AST)
 foreignKeyConstraint = do
   string "&FK"
-  blanks
+  spacesNoNew
   a1s <- attributesList
-  blanks
+  spacesNoNew
   string "->"
-  blanks
+  spacesNoNew
   t <- ident
   char '.'
   a2s <- attributesList
   eolComment
   return
     $ Just
-    $ F { fReferencedTableName <- t, fAttributeNames1 = a1s, fAttributeNames2 = a2s}
+    $ F { fReferencedTableName = t, fAttributeNames1 = a1s, fAttributeNames2 = a2s}
 
 attributesList :: Parser [AttributeName]
 attributesList = sepBy1 ident (char ',')
@@ -124,9 +114,6 @@ identNoSpace = do
   let p = satisfy (\c -> c == '_' || isAlphaNum c)
             <?> "letter, digit or underscore"
   fmap pack (many1 p)
-
-emptiness :: Parser ()
-emptiness = skipMany (void (many1 space) <|> eolComment)
 
 eolComment :: Parser ()
 eolComment = spacesNoNew >> (eol <|> void comment)

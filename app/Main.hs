@@ -15,6 +15,18 @@ import           Morela.Render(diagramToGraph)
 main :: IO ()
 main = do
   checkRequirements -- application may terminate here
+  input <- hGetContents stdin
+  parseTest fpath input
+
+{-
+loadER :: String -> Handle -> IO (Either String ER)
+loadER fpath f = do
+  s <- hGetContents f
+  case parse (do { (opts, ast) <- document; return $ toER opts ast}) fpath s of
+    Left err           -> return $ Left $ show err
+    Right err@(Left _) -> return err
+    Right (Right er)   -> return $ Right er
+-}
 
 {-
   conf <- configIO

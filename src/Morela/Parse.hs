@@ -14,7 +14,8 @@ import           Text.Parsec.Morela.Parser (AST (..))
 import qualified Data.Set as Set
 
 toDiagram :: [AST] -> Either String Diagram
-toDiagram xs = do
+toDiagram xs = undefined
+{- do
   diag <- foldM step xs (emptyDiagram,Nothing) <$> (uncurry addMaybeTable)
   checkConstraints diag
   return diag
@@ -52,3 +53,4 @@ toDiagram xs = do
       Right (d,t{
                tableCKs = tableCKs ++ [CKConstraint{ckSQLCondition = cSQLCondition, ckStyleName = Nothing, ckComment = Nothing }]
               })
+-}

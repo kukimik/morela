@@ -39,7 +39,7 @@ table = do n <- between (char '[') (char ']') ident
 
 attribute :: Parser (Maybe AST)
 attribute = do
-  attrConstraints <- many $ oneOf "*+ \t"
+  attrConstraints <- many $ oneOf "*! \t"
   let (ispk, isnn) = ('*' `elem` attrConstraints, '!' `elem` attrConstraints)
   n <- ident
   t <- option Nothing (Just <$> ident)

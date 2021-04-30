@@ -5,18 +5,20 @@ module Main
 where
 
 import qualified Data.ByteString                     as SB
-import           Data.Graphviz.Commands
+import           Data.GraphViz.Commands
 import           System.Exit                         (exitFailure)
-import           System.IO                           (hClose, hPutStrLn, stderr)
-
-import           Morela.Parse(document)
-import           Morela.Render(diagramToGraph)
+import           System.IO                           (hClose, hPutStrLn, stderr,stdin)
+import Data.Text.Encoding(decodeUtf8)
+import           Text.Parsec.Morela.Parser(document)
+import           Morela.Render(diagramToDotGraph)
+import Text.Parsec
+import Data.Text.Lazy (fromStrict)
 
 main :: IO ()
 main = do
   checkRequirements -- application may terminate here
-  input <- hGetContents stdin
-  parseTest fpath input
+  input <- SB.hGetContents stdin
+  parseTest document (fromStrict $ decodeUtf8 input)
 
 {-
 loadER :: String -> Handle -> IO (Either String ER)

@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+
 module Morela.Parse
   ( toDiagram
   )
@@ -14,43 +15,40 @@ import           Text.Parsec.Morela.Parser (AST (..))
 import qualified Data.Set as Set
 
 toDiagram :: [AST] -> Either String Diagram
-toDiagram xs = undefined
-{- do
-  diag <- foldM step xs (emptyDiagram,Nothing) <$> (uncurry addMaybeTable)
+toDiagram xs = do
+  diag <- (uncurry addMaybeTable) <$> foldM step (emptyDiagram,Nothing) xs
   checkConstraints diag
   return diag
   where
     addMaybeTable :: Diagram -> Maybe Table -> Diagram
     addMaybeTable d Nothing = d
     addMaybeTable d@Diagram{..} (Just t) = d{ diagramTables = Set.insert t diagramTables } -- TODO: fail on duplicate table name
-
     checkConstraints :: Diagram -> Either String ()
-    checkConstraints = return () -- TODO: check whether constraints are valid
+    checkConstraints = undefined -- TODO: check whether constraints are valid
 
     step :: (Diagram, Maybe Table) -> AST -> Either String (Diagram, Maybe Table)
-    step (d, Nothing) T{..} = Right (d, emptyTable tName)
+    step (d, Nothing) T{..} = Right (d, Just $ emptyTable tName)
     step (_, Nothing) _ = Left "Attribute or constraint comes before first table."
     step (d, t@(Just Table{})) T{..} =
       Right (
-             (addMaybeTable d t)
-            ,emptyTable tName
+             addMaybeTable d t
+            ,Just $ emptyTable tName
             )
-    step (d, t@(Just Table{})) A{..} = -- TODO: the list appending below is evil, fix this
-      Right (d,t{
-               tableAttributes = tableAttributes ++ [Attribute {attributeName = aName, attributeType = aTypeName, attributeComment = Nothing, attributeStyleName = Nothing }]
-              ,tableNNs = if aIsNN then tableNNs++[NNConstraint{nnAttributeName = aName}] else tableNNs
-              ,tablePK = if aIsPK then (tablePK t){pkAttributeNames = pkAttributeNames++[aName]} else tablePK -- TODO: make this readable
+    step (d, Just t@Table{}) A{..} = -- TODO: the list appending below is evil, fix this
+      Right (d, Just t{
+               tableAttributes = (tableAttributes t) <> [Attribute {attributeName = aName, attributeType = aTypeName, attributeComment = Nothing, attributeStyleName = Nothing }]
+              ,tableNNs = if aIsNN then tableNNs t <> [NNConstraint{nnAttributeName = aName}] else tableNNs t
+              ,tablePK = if aIsPK then (tablePK t){pkAttributeNames = pkAttributeNames (tablePK t) <> [aName]} else tablePK t -- TODO: make this readable
               })
-    step (d, t@(Just Table{})) U{..} =
-      Right (d,t{
-               tableUQs = tableUQs ++ [UQConstraint{uqAttributeNames = uAttributeNames, uqStyleName = Nothing, uqComment = Nothing }]
+    step (d, (Just t@Table{})) U{..} =
+      Right (d, Just t{
+               tableUQs = (tableUQs t) <> [UQConstraint{uqAttributeNames = uAttributeNames, uqStyleName = Nothing, uqComment = Nothing }]
               })
-    step (d, t@(Just Table{})) F{..} =
-      Right (d,t{
-               tableFKs = tableFKs ++ [FKConstraint{fkReferencedTableName = fReferencedTableName, fkAttributeMapping = zip fAttributeNames1 fAttributeNames2 {- TODO: fail when lengths do not match! -}, fkStyleName = Nothing, fkComment = Nothing }]
+    step (d, (Just t@Table{})) F{..} =
+      Right (d, Just t{
+               tableFKs = (tableFKs t) <> [FKConstraint{fkReferencedTableName = fReferencedTableName, fkAttributeMapping = zip fAttributeNames1 fAttributeNames2 {- TODO: fail when lengths do not match! -}, fkStyleName = Nothing, fkComment = Nothing }]
               })
-    step (d, t@(Just Table{})) C{..} =
-      Right (d,t{
-               tableCKs = tableCKs ++ [CKConstraint{ckSQLCondition = cSQLCondition, ckStyleName = Nothing, ckComment = Nothing }]
+    step (d, (Just t@Table{})) C{..} =
+      Right (d,Just t{
+               tableCKs = (tableCKs t) <> [CKConstraint{ckSQLCondition = cSQLCondition, ckStyleName = Nothing, ckComment = Nothing }]
               })
--}

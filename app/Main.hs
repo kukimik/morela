@@ -11,6 +11,7 @@ import           System.IO                           (hClose, hPutStrLn, stderr,
 import Data.Text.Encoding(decodeUtf8)
 import           Text.Parsec.Morela.Parser(document)
 import           Morela.Render(diagramToDotGraph)
+import           Morela.Parse(toDiagram)
 import Text.Parsec
 import Data.Text.Lazy (fromStrict)
 
@@ -18,7 +19,7 @@ main :: IO ()
 main = do
   checkRequirements -- application may terminate here
   input <- SB.hGetContents stdin
-  parseTest document (fromStrict $ decodeUtf8 input)
+  print $ parse document "" (fromStrict $ decodeUtf8 input)
 
 {-
 loadER :: String -> Handle -> IO (Either String ER)

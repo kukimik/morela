@@ -24,7 +24,7 @@ toDiagram xs = do
     addMaybeTable d Nothing = d
     addMaybeTable d@Diagram{..} (Just t) = d{ diagramTables = Set.insert t diagramTables } -- TODO: fail on duplicate table name
     checkConstraints :: Diagram -> Either String ()
-    checkConstraints = undefined -- TODO: check whether constraints are valid
+    checkConstraints _ = Right () --undefined -- TODO: check whether constraints are valid
 
     step :: (Diagram, Maybe Table) -> AST -> Either String (Diagram, Maybe Table)
     step (d, Nothing) T{..} = Right (d, Just $ emptyTable tName)

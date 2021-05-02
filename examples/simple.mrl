@@ -1,0 +1,19 @@
+[Person]
+  *id INTEGER
+  !name "VARCHAR(100)"
+  `social security number` 'VARCHAR(9)'
+  birth_place_id INTEGER
+  &UQ 'social security number'
+  &FK birt_place_id->`Birth place`.id
+  &CK `"social security number" != '078051120'`
+
+[Country]
+  *id
+  !country_name
+   
+[`Birth place`]
+  *id 
+  !country_id
+  !city_name
+  &UQ country_name,city_name
+  &FK country_id->Country.id

@@ -24,3 +24,9 @@ and build from source:
 `stack install` will put the binary into Stack's standard binary
 installation path.  Unless you've overridden it, that's `~/.local/bin`
 on Unix and OS X, `%APPDATA%\local\bin` on Windows.
+
+### Usage
+
+```bash
+morela < input.mrl > output.pdf
+```

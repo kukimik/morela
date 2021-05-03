@@ -107,7 +107,7 @@ identQuoted = do
   quote <- oneOf "'\"`"
   let p =
         satisfy (\c -> c /= quote && not (isControl c))
-          <?> "any character except " ++ [quote] ++ " or control characters"
+          <?> "any character except " <> [quote] <> " or control characters"
   n <- fmap pack (many1 p)
   _ <- char quote
   return n

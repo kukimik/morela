@@ -66,9 +66,9 @@ constraintsToEdge tabName nns uqs pk fk =
     ]
   where
     attrs :: Set.Set MR.AttributeName
-    attrs = Set.fromList . (fmap fst) . MR.fkAttributeMapping $ fk
+    attrs = Set.fromList . fmap fst . MR.fkAttributeMapping $ fk
     pkAttrs = Set.fromList . MR.pkAttributeNames $ pk
-    nnAttrs = Set.fromList . (fmap MR.nnAttributeName) $ nns
+    nnAttrs = Set.fromList . fmap MR.nnAttributeName $ nns
     uqsAttrs = fmap (Set.fromList . MR.uqAttributeNames) uqs
     isNN = attrs `Set.isSubsetOf` (pkAttrs `Set.union` nnAttrs)
     isUQ = (`Set.isSubsetOf` attrs) `any` (pkAttrs : uqsAttrs)
@@ -117,8 +117,8 @@ attributeRow pk nns attr =
     attrType = fromMaybe "(?)" (MR.attributeType attr)
     attrName :: MR.AttributeName
     attrName = MR.attributeName attr
-    isPK = attrName `elem` (MR.pkAttributeNames pk)
-    isNN = isPK || (attrName ==) `any` (map MR.nnAttributeName nns)
+    isPK = attrName `elem` MR.pkAttributeNames pk
+    isNN = isPK || (attrName ==) `any` map MR.nnAttributeName nns
     pkFormat
       | isPK = Just H.Underline
       | otherwise = Nothing
@@ -135,31 +135,36 @@ headerRow tn =
     ]
 
 pkRow :: MR.TableName -> MR.PKConstraint -> H.Row
-pkRow tn pk = oneCellRow [H.Port $ toPortName tn txt] $ txt
+pkRow tn pk = oneCellRow [H.Port $ toPortName tn txt] txt
   where
     txt = pkToText pk
 
 pkToText :: MR.PKConstraint -> L.Text
-pkToText pk = "PK(" <> (toCSV (MR.pkAttributeNames pk)) <> ")"
+pkToText pk = "PK(" <> toCSV (MR.pkAttributeNames pk) <> ")"
 
 uqRow :: MR.TableName -> MR.UQConstraint -> H.Row
-uqRow tn uq = oneCellRow [H.Port $ toPortName tn txt] $ txt
+uqRow tn uq = oneCellRow [H.Port $ toPortName tn txt] txt
   where
     txt = uqToText uq
 
 uqToText :: MR.UQConstraint -> L.Text
-uqToText uq = "UQ(" <> (toCSV (MR.uqAttributeNames uq)) <> ")"
+uqToText uq = "UQ(" <> toCSV (MR.uqAttributeNames uq) <> ")"
 
 ckRow :: MR.CKConstraint -> H.Row
-ckRow ck = oneCellRow [] $ "CK(" <> (MR.ckSQLCondition ck) <> ")"
+ckRow ck = oneCellRow [] $ "CK(" <> MR.ckSQLCondition ck <> ")"
 
 fkRow :: MR.TableName -> MR.FKConstraint -> H.Row
-fkRow tn fk = oneCellRow [H.Port $ toPortName tn txt] $ txt
+fkRow tn fk = oneCellRow [H.Port $ toPortName tn txt] txt
   where
     txt = fkToText fk
 
 fkToText :: MR.FKConstraint -> L.Text
-fkToText fk = "FK(" <> (toCSV a1) <> ") REFERENCES " <> (MR.fkReferencedTableName fk) <> "(" <> (toCSV a2) <> ")"
+fkToText fk =
+  "FK(" <> toCSV a1 <> ") REFERENCES "
+    <> MR.fkReferencedTableName fk
+    <> "("
+    <> toCSV a2
+    <> ")"
   where
     (a1, a2) = unzip $ MR.fkAttributeMapping fk
 
@@ -173,7 +178,10 @@ prefixTableName :: MR.TableName -> L.Text -> L.Text
 prefixTableName tabName txt = tabName <> "." <> txt
 
 oneCellRow :: H.Attributes -> L.Text -> H.Row
-oneCellRow cellAttr txt = H.Cells [H.LabelCell ((H.ColSpan 2) : (H.Align H.HLeft) : cellAttr) $ H.Text [H.Str txt]]
+oneCellRow cellAttr txt =
+  H.Cells
+    [ H.LabelCell (H.ColSpan 2 : H.Align H.HLeft : cellAttr) $ H.Text [H.Str txt]
+    ]
 
 addFormat :: H.Format -> H.Text -> H.Text
 addFormat f t = [H.Format f t]

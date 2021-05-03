@@ -2,6 +2,7 @@
 
 module Main (main) where
 
+import Control.Monad ((>=>))
 import Data.Bifunctor (first)
 import qualified Data.ByteString as SB
 import Data.GraphViz.Commands
@@ -18,12 +19,19 @@ main :: IO ()
 main = do
   checkRequirements -- application may terminate here
   input <- SB.hGetContents stdin
-  case (first show $ parse document "" (fromStrict $ decodeUtf8 input)) >>= toDiagram of
+  case first
+    show
+    (parse document "" (fromStrict $ decodeUtf8 input))
+    >>= toDiagram of
     Left err -> do
       hPutStrLn stderr err
       exitFailure
-    Right diag -> do
-      graphvizWithHandle Dot (diagramToDotGraph diag) Pdf (\h -> SB.hGetContents h >>= SB.hPut stdout) -- customize command (Dot vs Neato)
+    Right diag ->
+      graphvizWithHandle
+        Dot
+        (diagramToDotGraph diag)
+        Pdf
+        (SB.hGetContents >=> SB.hPut stdout)
 
 checkRequirements :: IO ()
 checkRequirements = quitWithoutGraphviz msg

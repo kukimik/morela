@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Morela.Types
   ( AttributeName,
     ConstraintName,
@@ -52,13 +50,15 @@ data Attribute = Attribute
 instance Ord Attribute where
   a1 `compare` a2 = attributeName a1 `compare` attributeName a2
 
-data PKConstraint = PKConstraint
-  { pkAttributeNames :: [AttributeName] -- switch to NonEmpty
+newtype PKConstraint = PKConstraint
+  { pkAttributeNames ::
+      [AttributeName]
   }
   deriving (Eq, Show)
 
-data NNConstraint = NNConstraint
-  { nnAttributeName :: AttributeName
+newtype NNConstraint = NNConstraint
+  { nnAttributeName ::
+      AttributeName
   }
   deriving (Eq, Show)
 

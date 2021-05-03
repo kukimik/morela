@@ -7,15 +7,13 @@ module Morela.Parse
 where
 
 import Control.Monad (foldM)
-import Data.Maybe
 import qualified Data.Set as Set
-import Data.Text.Lazy hiding (zip)
 import Morela.Types
 import Text.Parsec.Morela.Parser (AST (..))
 
 toDiagram :: [AST] -> Either String Diagram
 toDiagram xs = do
-  diag <- (uncurry addMaybeTable) <$> foldM step (emptyDiagram, Nothing) xs
+  diag <- uncurry addMaybeTable <$> foldM step (emptyDiagram, Nothing) xs
   checkConstraints diag
   return diag
   where
@@ -38,32 +36,75 @@ toDiagram xs = do
         ( d,
           Just
             t
-              { tableAttributes = (tableAttributes t) <> [Attribute {attributeName = aName, attributeType = aTypeName, attributeComment = Nothing, attributeStyleName = Nothing}],
-                tableNNs = if aIsNN then tableNNs t <> [NNConstraint {nnAttributeName = aName}] else tableNNs t,
-                tablePK = if aIsPK then (tablePK t) {pkAttributeNames = pkAttributeNames (tablePK t) <> [aName]} else tablePK t -- TODO: make this readable
+              { tableAttributes =
+                  tableAttributes t
+                    <> [ Attribute
+                           { attributeName = aName,
+                             attributeType = aTypeName,
+                             attributeComment = Nothing,
+                             attributeStyleName = Nothing
+                           }
+                       ],
+                tableNNs =
+                  if aIsNN
+                    then
+                      tableNNs t
+                        <> [NNConstraint {nnAttributeName = aName}]
+                    else tableNNs t,
+                tablePK =
+                  if aIsPK
+                    then
+                      (tablePK t)
+                        { pkAttributeNames =
+                            pkAttributeNames (tablePK t)
+                              <> [aName]
+                        }
+                    else tablePK t -- TODO: make this readable
               }
         )
-    step (d, (Just t@Table {})) U {..} =
+    step (d, Just t@Table {}) U {..} =
       Right
         ( d,
           Just
             t
-              { tableUQs = (tableUQs t) <> [UQConstraint {uqAttributeNames = uAttributeNames, uqStyleName = Nothing, uqComment = Nothing}]
+              { tableUQs =
+                  tableUQs t
+                    <> [ UQConstraint
+                           { uqAttributeNames = uAttributeNames,
+                             uqStyleName = Nothing,
+                             uqComment = Nothing
+                           }
+                       ]
               }
         )
-    step (d, (Just t@Table {})) F {..} =
+    step (d, Just t@Table {}) F {..} =
       Right
         ( d,
           Just
             t
-              { tableFKs = (tableFKs t) <> [FKConstraint {fkReferencedTableName = fReferencedTableName, fkAttributeMapping = zip fAttributeNames1 fAttributeNames2 {- TODO: fail when lengths do not match! -}, fkStyleName = Nothing, fkComment = Nothing}]
+              { tableFKs =
+                  tableFKs t
+                    <> [ FKConstraint
+                           { fkReferencedTableName = fReferencedTableName,
+                             fkAttributeMapping = zip fAttributeNames1 fAttributeNames2 {- TODO: fail when lengths do not match! -},
+                             fkStyleName = Nothing,
+                             fkComment = Nothing
+                           }
+                       ]
               }
         )
-    step (d, (Just t@Table {})) C {..} =
+    step (d, Just t@Table {}) C {..} =
       Right
         ( d,
           Just
             t
-              { tableCKs = (tableCKs t) <> [CKConstraint {ckSQLCondition = cSQLCondition, ckStyleName = Nothing, ckComment = Nothing}]
+              { tableCKs =
+                  tableCKs t
+                    <> [ CKConstraint
+                           { ckSQLCondition = cSQLCondition,
+                             ckStyleName = Nothing,
+                             ckComment = Nothing
+                           }
+                       ]
               }
         )

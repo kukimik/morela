@@ -1,20 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main
-  (main)
-where
+module Main (main) where
 
-import Data.Bifunctor(first)
-import qualified Data.ByteString                     as SB
-import           Data.GraphViz.Commands
-import           System.Exit                         (exitFailure)
-import           System.IO                           (hPutStrLn, stderr,stdin,stdout)
-import Data.Text.Encoding(decodeUtf8)
-import           Text.Parsec.Morela.Parser(document)
-import           Morela.Render(diagramToDotGraph)
-import           Morela.Parse(toDiagram)
-import Text.Parsec
+import Data.Bifunctor (first)
+import qualified Data.ByteString as SB
+import Data.GraphViz.Commands
+import Data.Text.Encoding (decodeUtf8)
 import Data.Text.Lazy (fromStrict)
+import Morela.Parse (toDiagram)
+import Morela.Render (diagramToDotGraph)
+import System.Exit (exitFailure)
+import System.IO (hPutStrLn, stderr, stdin, stdout)
+import Text.Parsec
+import Text.Parsec.Morela.Parser (document)
 
 main :: IO ()
 main = do
@@ -30,5 +28,6 @@ main = do
 checkRequirements :: IO ()
 checkRequirements = quitWithoutGraphviz msg
   where
-    msg = "GraphViz is not installed on your system.\n" ++
-          "Please install it first. https://github.com/kukimik/morela"
+    msg =
+      "GraphViz is not installed on your system.\n"
+        ++ "Please install it first. https://github.com/kukimik/morela"

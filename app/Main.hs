@@ -5,11 +5,14 @@ module Main (main) where
 import Control.Monad ((>=>))
 import Data.Bifunctor (first)
 import qualified Data.ByteString as SB
-import Data.GraphViz.Commands
+import Data.Functor.Identity (runIdentity)
+import Data.GraphViz.Commands as GC
 import Data.Text.Encoding (decodeUtf8)
 import Data.Text.Lazy (fromStrict)
+import Morela.Config (Opts (..), OutputFormat (..), optsParserInfo, partialToGraphvizOutput)
 import Morela.Parse (toDiagram)
 import Morela.Render (diagramToDotGraph)
+import Options.Applicative (execParser)
 import System.Exit (exitFailure)
 import System.IO (hPutStrLn, stderr, stdin, stdout)
 import Text.Parsec
@@ -17,7 +20,8 @@ import Text.Parsec.Morela.Parser (document)
 
 main :: IO ()
 main = do
-  checkRequirements -- application may terminate here
+  GC.quitWithoutGraphviz "GraphViz is not installed on your system."
+  opts <- execParser optsParserInfo
   input <- SB.hGetContents stdin
   case first
     show
@@ -27,15 +31,14 @@ main = do
       hPutStrLn stderr err
       exitFailure
     Right diag ->
-      graphvizWithHandle
-        Dot
-        (diagramToDotGraph diag)
-        Pdf
-        (SB.hGetContents >=> SB.hPut stdout)
-
-checkRequirements :: IO ()
-checkRequirements = quitWithoutGraphviz msg
-  where
-    msg =
-      "GraphViz is not installed on your system.\n"
-        ++ "Please install it first. https://github.com/kukimik/morela"
+      case runIdentity $ optOutputFormat opts of
+        SQL ->
+          undefined
+        Morela ->
+          undefined
+        fmt ->
+          GC.graphvizWithHandle
+            GC.Dot
+            (diagramToDotGraph diag)
+            (partialToGraphvizOutput fmt)
+            (SB.hGetContents >=> SB.hPut stdout)

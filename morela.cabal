@@ -28,21 +28,17 @@ source-repository head
 executable morela
   default-language: Haskell2010
   hs-source-dirs: app, src
-  other-modules: Morela.Types
+  other-modules: Morela.Config
                , Morela.Parse
                , Morela.Render
-               , Paths_morela
+               , Morela.Types
                , Text.Parsec.Morela.Parser
   main-is: Main.hs
   ghc-options: -Wall -W
   build-depends: base >= 4.5 && <5
-               , directory >= 1.3.1.5
-               , filepath >= 1.4.2
-               , gitrev >= 1.3.1
-               , graphviz >= 2999.20.0.4
-               , text == 1.*
-               , parsec == 3.1.*
-               , containers >= 0.5.11.0
                , bytestring == 0.10.*
-               , yaml >= 0.8.32
-               , raw-strings-qq >= 1.1
+               , containers >= 0.5.11.0
+               , graphviz >= 2999.20.0.4
+               , optparse-applicative >=0.14 && <0.17
+               , parsec == 3.1.*
+               , text == 1.*

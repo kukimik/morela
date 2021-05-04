@@ -9,7 +9,7 @@ import Data.Functor.Identity (runIdentity)
 import Data.GraphViz.Commands as GC
 import Data.Text.Encoding (decodeUtf8)
 import Data.Text.Lazy (fromStrict)
-import Morela.Config (Opts (..), OutputFormat (..), optsParserInfo, partialToGraphvizOutput)
+import Morela.Config
 import Morela.Parse (toDiagram)
 import Morela.Render (diagramToDotGraph)
 import Options.Applicative (execParser)
@@ -32,13 +32,13 @@ main = do
       exitFailure
     Right diag ->
       case runIdentity $ optOutputFormat opts of
-        SQL ->
+        MorelaOutputFormat SQL ->
           undefined
-        Morela ->
+        MorelaOutputFormat Morela ->
           undefined
-        fmt ->
+        GraphvizOutputFormat fmt ->
           GC.graphvizWithHandle
             GC.Dot
             (diagramToDotGraph diag)
-            (partialToGraphvizOutput fmt)
+            (toGraphvizOutput fmt)
             (SB.hGetContents >=> SB.hPut stdout)

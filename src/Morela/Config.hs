@@ -6,33 +6,61 @@
 module Morela.Config
   ( Opts (..),
     OutputFormat (..),
+    MorelaOutput (..),
+    GraphvizOutput (..),
     optsParserInfo,
     toGraphvizOutput,
   )
 where
 
+import Data.Char (toLower)
 import Data.Functor.Identity (Identity (..))
 import qualified Data.GraphViz.Commands as GC
 import Data.List (intercalate)
 import Options.Applicative
 
-data OutputFormat
+data GraphvizOutput
+  = Dot
+  | Eps
+  | Fig
+  | Gif
+  | Jpeg
+  | Pdf
+  | Png
+  | Ps
+  | Ps2
+  | Svg
+  | SvgZ
+  | Tiff
+  | WebP
+  deriving (Eq, Show, Bounded, Enum)
+
+data MorelaOutput
   = SQL
   | Morela
-  | GraphVizDotOutput
-  | GraphVizEps
-  | GraphVizFig
-  | GraphVizGif
-  | GraphVizJpeg
-  | GraphVizPdf
-  | GraphVizPng
-  | GraphVizPs
-  | GraphVizPs2
-  | GraphVizSvg
-  | GraphVizSvgZ
-  | GraphVizTiff
-  | GraphVizWebP
   deriving (Eq, Show, Bounded, Enum)
+
+data OutputFormat
+  = MorelaOutputFormat MorelaOutput
+  | GraphvizOutputFormat GraphvizOutput
+  deriving (Eq, Show)
+
+instance Bounded OutputFormat where
+  minBound = MorelaOutputFormat minBound
+  maxBound = GraphvizOutputFormat maxBound
+
+instance Enum OutputFormat where
+  fromEnum (MorelaOutputFormat fmt) = fromEnum fmt
+  fromEnum (GraphvizOutputFormat fmt) = morelaOutputMax + 1 + fromEnum fmt
+    where
+      morelaOutputMax = fromEnum $ maxBound @MorelaOutput
+  toEnum n
+    | n <= morelaOutputMax =
+      MorelaOutputFormat $ toEnum n
+    | otherwise =
+      GraphvizOutputFormat $ toEnum (n -1 - morelaOutputMax)
+    where
+      morelaOutputMax = fromEnum $ maxBound @MorelaOutput
 
 data Opts f = Opts
   { optOutputFormat :: f OutputFormat
@@ -45,7 +73,7 @@ type OptsTotal = Opts Identity
 defaultOpts :: OptsTotal
 defaultOpts =
   Opts
-    { optOutputFormat = pure GraphVizPdf
+    { optOutputFormat = pure $ GraphvizOutputFormat Pdf
     }
 
 fillMissingOpts :: OptsPartial -> OptsTotal
@@ -113,35 +141,20 @@ class ToCLIArgument a where
   toCLIArgument :: a -> String
 
 instance ToCLIArgument OutputFormat where
-  toCLIArgument SQL = "sql"
-  toCLIArgument Morela = "mrl"
-  toCLIArgument GraphVizDotOutput = "dot"
-  toCLIArgument GraphVizEps = "eps"
-  toCLIArgument GraphVizFig = "fig"
-  toCLIArgument GraphVizGif = "gif"
-  toCLIArgument GraphVizJpeg = "jpeg"
-  toCLIArgument GraphVizPdf = "pdf"
-  toCLIArgument GraphVizPng = "png"
-  toCLIArgument GraphVizPs = "ps"
-  toCLIArgument GraphVizPs2 = "ps2"
-  toCLIArgument GraphVizSvg = "svg"
-  toCLIArgument GraphVizSvgZ = "svgz"
-  toCLIArgument GraphVizTiff = "tiff"
-  toCLIArgument GraphVizWebP = "webp"
+  toCLIArgument (GraphvizOutputFormat fmt) = toLower <$> show fmt
+  toCLIArgument (MorelaOutputFormat fmt) = toLower <$> show fmt
 
-partialToGraphvizOutput :: OutputFormat -> GC.GraphvizOutput
-partialToGraphvizOutput GraphVizDotOutput = GC.DotOutput
-partialToGraphvizOutput GraphVizEps = GC.Eps
-partialToGraphvizOutput GraphVizFig = GC.Fig
-partialToGraphvizOutput GraphVizGif = GC.Gif
-partialToGraphvizOutput GraphVizJpeg = GC.Jpeg
-partialToGraphvizOutput GraphVizPdf = GC.Pdf
-partialToGraphvizOutput GraphVizPng = GC.Png
-partialToGraphvizOutput GraphVizPs = GC.Ps
-partialToGraphvizOutput GraphVizPs2 = GC.Ps2
-partialToGraphvizOutput GraphVizSvg = GC.Svg
-partialToGraphvizOutput GraphVizSvgZ = GC.SvgZ
-partialToGraphvizOutput GraphVizTiff = GC.Tiff
-partialToGraphvizOutput GraphVizWebP = GC.WebP
-partialToGraphvizOutput SQL = undefined
-partialToGraphvizOutput Morela = undefined
+toGraphvizOutput :: GraphvizOutput -> GC.GraphvizOutput
+toGraphvizOutput Dot = GC.DotOutput
+toGraphvizOutput Eps = GC.Eps
+toGraphvizOutput Fig = GC.Fig
+toGraphvizOutput Gif = GC.Gif
+toGraphvizOutput Jpeg = GC.Jpeg
+toGraphvizOutput Pdf = GC.Pdf
+toGraphvizOutput Png = GC.Png
+toGraphvizOutput Ps = GC.Ps
+toGraphvizOutput Ps2 = GC.Ps2
+toGraphvizOutput Svg = GC.Svg
+toGraphvizOutput SvgZ = GC.SvgZ
+toGraphvizOutput Tiff = GC.Tiff
+toGraphvizOutput WebP = GC.WebP

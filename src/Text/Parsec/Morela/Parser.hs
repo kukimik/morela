@@ -11,8 +11,8 @@ import Text.Parsec
 import Text.Parsec.Text.Lazy
 
 data AST
-  = T {tName :: TableName}
-  | A {aName :: AttributeName, aTypeName :: Maybe TypeName, aIsPK :: Bool, aIsNN :: Bool}
+  = T {tName :: TableName, tComment :: Maybe Comment}
+  | A {aName :: AttributeName, aTypeName :: Maybe TypeName, aIsPK :: Bool, aIsNN :: Bool, aComment :: Maybe Comment}
   | U {uAttributeNames :: [AttributeName]}
   | F {fReferencedTableName :: TableName, fAttributeNames1 :: [AttributeName], fAttributeNames2 :: [AttributeName]}
   | C {cSQLCondition :: SQLCondition}
@@ -20,7 +20,7 @@ data AST
 
 document :: Parser [AST]
 document = do
-  skipMany (comment <|> blanks)
+  skipMany (morelaComment <|> blanks)
   catMaybes <$> manyTill top eof
   where
     top =
@@ -29,59 +29,61 @@ document = do
         <|> (try uniqueConstraint <?> "unique constraint")
         <|> (try foreignKeyConstraint <?> "foreign key constraint")
         <|> (try checkConstraint <?> "check constraint")
-        <|> (comment <?> "comment")
+        <|> (morelaComment <?> "comment")
         <|> blanks
     blanks = many1 (space <?> "whitespace") >> return Nothing
 
 table :: Parser (Maybe AST)
 table = do
   n <- between (char '[') (char ']') ident
-  eolComment
-  return $ Just $ T {tName = n}
+  c <- option Nothing (Just <$> comment)
+  eolMorelaComment
+  return $ Just $ T {tName = n, tComment = c}
 
 attribute :: Parser (Maybe AST)
 attribute = do
   attrConstraints <- many $ oneOf "*! \t"
   let (ispk, isnn) = ('*' `elem` attrConstraints, '!' `elem` attrConstraints)
   n <- ident
-  t <- option Nothing (Just <$> ident)
-  eolComment
+  t <- option Nothing (Just <$> typeDeclaration)
+  c <- option Nothing (Just <$> comment)
+  eolMorelaComment
   return $
     Just $
-      A {aName = n, aTypeName = t, aIsPK = ispk, aIsNN = isnn}
+      A {aName = n, aTypeName = t, aIsPK = ispk, aIsNN = isnn, aComment = c}
 
 checkConstraint :: Parser (Maybe AST)
 checkConstraint = do
-  string "&CK"
+  _ <- string "&CK"
   spacesNoNew
   c <- identQuoted
-  eolComment
+  eolMorelaComment
   return $
     Just $
       C {cSQLCondition = c}
 
 uniqueConstraint :: Parser (Maybe AST)
 uniqueConstraint = do
-  string "&UQ"
+  _ <- string "&UQ"
   spacesNoNew
   as <- attributesList
-  eolComment
+  eolMorelaComment
   return $
     Just $
       U {uAttributeNames = as}
 
 foreignKeyConstraint :: Parser (Maybe AST)
 foreignKeyConstraint = do
-  string "&FK"
+  _ <- string "&FK"
   spacesNoNew
   a1s <- attributesList
   spacesNoNew
-  string "->"
+  _ <- string "->"
   spacesNoNew
   t <- ident
-  char '.'
+  _ <- char '.'
   a2s <- attributesList
-  eolComment
+  eolMorelaComment
   return $
     Just $
       F {fReferencedTableName = t, fAttributeNames1 = a1s, fAttributeNames2 = a2s}
@@ -89,11 +91,16 @@ foreignKeyConstraint = do
 attributesList :: Parser [AttributeName]
 attributesList = sepBy1 ident (char ',')
 
-comment :: Parser (Maybe AST)
-comment = do
+morelaComment :: Parser (Maybe AST)
+morelaComment = do
   _ <- char '#'
   _ <- manyTill anyChar $ try eol
   return Nothing
+
+comment :: Parser Text
+comment = do
+  _ <- char '^'
+  identQuoted
 
 ident :: Parser Text
 ident = do
@@ -119,8 +126,18 @@ identNoSpace = do
           <?> "letter, digit or underscore"
   fmap pack (many1 p)
 
-eolComment :: Parser ()
-eolComment = spacesNoNew >> (eol <|> void comment)
+typeDeclaration :: Parser Text
+typeDeclaration = do
+  spacesNoNew
+  let p =
+        satisfy (\c -> c `elem` ['_',',','(',')'] || isAlphaNum c)
+          <?> "letter, digit, underscore, comma or bracket"
+  t <- fmap pack (many1 p)
+  spacesNoNew
+  return t
+
+eolMorelaComment :: Parser ()
+eolMorelaComment = spacesNoNew >> (eol <|> void comment)
 
 spacesNoNew :: Parser ()
 spacesNoNew = skipMany $ satisfy $ \c -> c /= '\n' && c /= '\r' && isSpace c

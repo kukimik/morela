@@ -21,14 +21,14 @@ toDiagram xs = do
     addMaybeTable d Nothing = d
     addMaybeTable d@Diagram {..} (Just t) = d {diagramTables = Set.insert t diagramTables} -- TODO: fail on duplicate table name
     checkConstraints :: Diagram -> Either String ()
-    checkConstraints _ = Right () --undefined -- TODO: check whether constraints are valid
+    checkConstraints _ = Right () -- TODO: check whether constraints are valid
     step :: (Diagram, Maybe Table) -> AST -> Either String (Diagram, Maybe Table)
     step (d, Nothing) T {..} = Right (d, Just $ emptyTable tName)
     step (_, Nothing) _ = Left "Attribute or constraint comes before first table."
     step (d, t@(Just Table {})) T {..} =
       Right
         ( addMaybeTable d t,
-          Just $ emptyTable tName
+          Just $ (emptyTable tName){ tableComment = tComment }
         )
     step (d, Just t@Table {}) A {..} =
       -- TODO: the list appending below is evil, fix this
@@ -41,7 +41,7 @@ toDiagram xs = do
                     <> [ Attribute
                            { attributeName = aName,
                              attributeType = aTypeName,
-                             attributeComment = Nothing,
+                             attributeComment = aComment,
                              attributeStyleName = Nothing
                            }
                        ],

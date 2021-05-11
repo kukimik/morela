@@ -10,7 +10,7 @@ import qualified Morela.Types as MR
 
 diagramToSQL :: MR.Diagram -> T.Text
 diagramToSQL diag = toLazyText . mconcat $
-  [bldCreateTable, bldAddForeignKeys] <*>
+  [bldCreateTable, bldAddForeignKeys, bldComments] <*>
     Set.toList (MR.diagramTables diag)
 
 bldCreateTable :: MR.Table -> Builder
@@ -72,6 +72,20 @@ bldAddForeignKey tn fk =
     ]
   where
     (c1s, c2s) = unzip $ MR.fkAttributeMapping fk
+
+bldComments :: MR.Table -> Builder
+bldComments MR.Table {MR.tableName = tn, MR.tableAttributes = as, MR.tableComment = tc} =
+  bldTableComment tn tc <> mconcat (bldAttributeComment tn <$> as)
+
+bldTableComment :: MR.TableName -> Maybe MR.Comment -> Builder
+bldTableComment tn (Just c) =
+  textsToBld ["COMMENT ON TABLE ", tn, " IS \"", c, "\";\n"]
+bldTableComment _ _ = mempty
+
+bldAttributeComment :: MR.TableName -> MR.Attribute -> Builder
+bldAttributeComment tn MR.Attribute{MR.attributeName = an, MR.attributeComment = Just c} =
+  textsToBld ["COMMENT ON COLUMN ", tn, ".", an, " IS \"", c, "\";\n"]
+bldAttributeComment _ _ = mempty
 
 textsToBld :: [T.Text] -> Builder
 textsToBld = mconcat . fmap fromLazyText

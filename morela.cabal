@@ -32,6 +32,7 @@ executable morela
                , Morela.Parse
                , Morela.Render
                , Morela.Types
+               , Morela.Writer.SQL
                , Text.Parsec.Morela.Parser
   main-is: Main.hs
   ghc-options: -Wall -W

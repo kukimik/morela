@@ -108,3 +108,19 @@ toDiagram xs = do
                        ]
               }
         )
+    step (d, Just t@Table {}) I {..} =
+      Right
+        ( d,
+          Just
+            t
+              { tableIndexes =
+                  tableIndexes t
+                    <> [ Index
+                           { ixAttributeNames = iAttributeNames,
+                             ixIsUnique = iIsUnique,
+                             ixStyleName = Nothing,
+                             ixComment = Nothing
+                           }
+                       ]
+              }
+        )

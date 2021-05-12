@@ -16,11 +16,12 @@ data AST
   | U {uAttributeNames :: [AttributeName]}
   | F {fReferencedTableName :: TableName, fAttributeNames1 :: [AttributeName], fAttributeNames2 :: [AttributeName]}
   | C {cSQLCondition :: SQLCondition}
+  | I {iAttributeNames :: [AttributeName], iIsUnique :: Bool}
   deriving (Show, Eq)
 
 document :: Parser [AST]
 document = do
-  skipMany (morelaComment <|> blanks)
+  skipMany (comment <|> blanks)
   catMaybes <$> manyTill top eof
   where
     top =
@@ -29,15 +30,17 @@ document = do
         <|> (try uniqueConstraint <?> "unique constraint")
         <|> (try foreignKeyConstraint <?> "foreign key constraint")
         <|> (try checkConstraint <?> "check constraint")
-        <|> (morelaComment <?> "comment")
+        <|> (try regularIndex <?> "index")
+        <|> (try uniqueIndex <?> "unique index")
+        <|> (comment <?> "comment")
         <|> blanks
     blanks = many1 (space <?> "whitespace") >> return Nothing
 
 table :: Parser (Maybe AST)
 table = do
   n <- between (char '[') (char ']') ident
-  c <- option Nothing (Just <$> comment)
-  eolMorelaComment
+  c <- option Nothing (Just <$> dbObjectComment)
+  eolComment
   return $ Just $ T {tName = n, tComment = c}
 
 attribute :: Parser (Maybe AST)
@@ -46,8 +49,8 @@ attribute = do
   let (ispk, isnn) = ('*' `elem` attrConstraints, '!' `elem` attrConstraints)
   n <- ident
   t <- option Nothing (Just <$> typeDeclaration)
-  c <- option Nothing (Just <$> comment)
-  eolMorelaComment
+  c <- option Nothing (Just <$> dbObjectComment)
+  eolComment
   return $
     Just $
       A {aName = n, aTypeName = t, aIsPK = ispk, aIsNN = isnn, aComment = c}
@@ -57,20 +60,39 @@ checkConstraint = do
   _ <- string "&CK"
   spacesNoNew
   c <- identQuoted
-  eolMorelaComment
+  eolComment
   return $
     Just $
       C {cSQLCondition = c}
 
 uniqueConstraint :: Parser (Maybe AST)
 uniqueConstraint = do
-  _ <- string "&UQ"
-  spacesNoNew
-  as <- attributesList
-  eolMorelaComment
+  as <- helperUniquesAndIndexes "&UQ"
   return $
     Just $
       U {uAttributeNames = as}
+
+regularIndex :: Parser (Maybe AST)
+regularIndex = do
+  as <- helperUniquesAndIndexes "&IX"
+  return $
+    Just $
+      I {iAttributeNames = as, iIsUnique = False}
+
+uniqueIndex :: Parser (Maybe AST)
+uniqueIndex = do
+  as <- helperUniquesAndIndexes "&UX"
+  return $
+    Just $
+      I {iAttributeNames = as, iIsUnique = True}
+
+helperUniquesAndIndexes :: String -> Parser[AttributeName]
+helperUniquesAndIndexes cmd = do
+  _ <- string cmd
+  spacesNoNew
+  as <- attributesList
+  eolComment
+  return as
 
 foreignKeyConstraint :: Parser (Maybe AST)
 foreignKeyConstraint = do
@@ -83,7 +105,7 @@ foreignKeyConstraint = do
   t <- ident
   _ <- char '.'
   a2s <- attributesList
-  eolMorelaComment
+  eolComment
   return $
     Just $
       F {fReferencedTableName = t, fAttributeNames1 = a1s, fAttributeNames2 = a2s}
@@ -91,14 +113,15 @@ foreignKeyConstraint = do
 attributesList :: Parser [AttributeName]
 attributesList = sepBy1 ident (char ',')
 
-morelaComment :: Parser (Maybe AST)
-morelaComment = do
+comment :: Parser (Maybe AST)
+comment = do
   _ <- char '#'
   _ <- manyTill anyChar $ try eol
   return Nothing
 
-comment :: Parser Text
-comment = do
+dbObjectComment :: Parser Text
+dbObjectComment = do
+  spacesNoNew
   _ <- char '^'
   identQuoted
 
@@ -132,12 +155,11 @@ typeDeclaration = do
   let p =
         satisfy (\c -> c `elem` ['_',',','(',')'] || isAlphaNum c)
           <?> "letter, digit, underscore, comma or bracket"
-  t <- fmap pack (many1 p)
-  spacesNoNew
-  return t
+  fmap pack (many1 p)
 
-eolMorelaComment :: Parser ()
-eolMorelaComment = spacesNoNew >> (eol <|> void comment)
+
+eolComment :: Parser ()
+eolComment = spacesNoNew >> (eol <|> void comment)
 
 spacesNoNew :: Parser ()
 spacesNoNew = skipMany $ satisfy $ \c -> c /= '\n' && c /= '\r' && isSpace c

@@ -29,7 +29,7 @@ diagramToDotGraph d = T.digraph' $ do
     ]
   T.edgeAttrs
     [ A.Color [A.toWC $ A.toColor R.Gray50], -- easier to read labels
-    --, A.MinLen 2 -- give some breathing room
+      --A.MinLen 2, -- give some breathing room
       A.Style [A.SItem A.Solid []]
     ]
   mapM_ tableToDot (MR.diagramTables d)
@@ -94,6 +94,7 @@ tableToHTMLLabel tab =
             <> uqRows
             <> ckRows
             <> fkRows
+            <> indexRows
       }
   where
     tabName = MR.tableName tab
@@ -101,6 +102,7 @@ tableToHTMLLabel tab =
     uqRows = uqRow tabName <$> MR.tableUQs tab
     ckRows = ckRow <$> MR.tableCKs tab
     fkRows = fkRow tabName <$> MR.tableFKs tab
+    indexRows = indexRow <$> MR.tableIndexes tab
 
 attributeRow :: MR.PKConstraint -> [MR.NNConstraint] -> MR.Attribute -> H.Row
 attributeRow pk nns attr =
@@ -167,6 +169,13 @@ fkToText fk =
     <> ")"
   where
     (a1, a2) = unzip $ MR.fkAttributeMapping fk
+
+indexRow :: MR.Index -> H.Row
+indexRow ix = oneCellRow [] $
+  (if MR.ixIsUnique ix then "UX" else "IX") <>
+  "(" <>
+  toCSV (MR.ixAttributeNames ix) <>
+  ")"
 
 toPortName :: MR.TableName -> L.Text -> A.PortName
 toPortName tn txt = A.PN $ prefixTableName tn txt

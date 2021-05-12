@@ -12,6 +12,7 @@ module Morela.Types
     FKConstraint (..),
     CKConstraint (..),
     UQConstraint (..),
+    Index (..),
     Table (..),
     Style (..),
     Diagram (..),
@@ -84,6 +85,15 @@ data UQConstraint = UQConstraint
   }
   deriving (Eq, Show)
 
+data Index = Index
+  {
+   ixAttributeNames :: [AttributeName],
+   ixIsUnique :: Bool, -- TODO: maybe encode this in type?
+   ixStyleName :: Maybe StyleName,
+   ixComment :: Maybe Comment
+  }
+  deriving (Eq, Show)
+
 data Table = Table
   { tableName :: TableName,
     tableAttributes :: [Attribute], -- TODO: change this and other lists to sequences (or non-empty sequences)
@@ -92,7 +102,8 @@ data Table = Table
     tableNNs :: [NNConstraint],
     tableCKs :: [CKConstraint],
     tableUQs :: [UQConstraint],
-    tableFKs :: [FKConstraint]
+    tableFKs :: [FKConstraint],
+    tableIndexes :: [Index]
   }
   deriving (Eq, Show)
 
@@ -124,5 +135,6 @@ emptyTable tn =
       tableNNs = empty,
       tableCKs = empty,
       tableUQs = empty,
-      tableFKs = empty
+      tableFKs = empty,
+      tableIndexes = empty
     }

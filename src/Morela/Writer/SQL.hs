@@ -10,7 +10,7 @@ import qualified Morela.Types as MR
 
 diagramToSQL :: MR.Diagram -> T.Text
 diagramToSQL diag = toLazyText . mconcat $
-  [bldCreateTable, bldAddForeignKeys, bldComments] <*>
+  [bldCreateTable, bldAddForeignKeys, bldCreateIndexes, bldComments] <*>
     Set.toList (MR.diagramTables diag)
 
 bldCreateTable :: MR.Table -> Builder
@@ -61,6 +61,10 @@ bldAddForeignKeys :: MR.Table -> Builder
 bldAddForeignKeys MR.Table {MR.tableFKs = fks, MR.tableName = tn} =
   mconcat $ bldAddForeignKey tn <$> fks
 
+bldCreateIndexes :: MR.Table -> Builder
+bldCreateIndexes MR.Table {MR.tableIndexes = ixs, MR.tableName = tn} =
+  mconcat $ bldCreateIndex tn <$> ixs
+
 bldAddForeignKey :: MR.TableName -> MR.FKConstraint -> Builder
 bldAddForeignKey tn fk =
   mconcat
@@ -72,6 +76,16 @@ bldAddForeignKey tn fk =
     ]
   where
     (c1s, c2s) = unzip $ MR.fkAttributeMapping fk
+
+bldCreateIndex :: MR.TableName -> MR.Index -> Builder
+bldCreateIndex tn ix =
+  mconcat
+    [ fromLazyText "CREATE ",
+      if MR.ixIsUnique ix then fromLazyText "UNIQUE " else mempty,
+      textsToBld ["INDEX ON ", tn, "("],
+      bldCSV $ fromLazyText <$> MR.ixAttributeNames ix,
+      fromLazyText ");\n"
+    ]
 
 bldComments :: MR.Table -> Builder
 bldComments MR.Table {MR.tableName = tn, MR.tableAttributes = as, MR.tableComment = tc} =

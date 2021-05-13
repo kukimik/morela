@@ -9,53 +9,55 @@ import Data.Text.Lazy.Builder
 import qualified Morela.Types as MR
 
 diagramToSQL :: MR.Diagram -> T.Text
-diagramToSQL diag = toLazyText . mconcat $
-  [bldCreateTable, bldAddForeignKeys, bldCreateIndexes, bldComments] <*>
-    Set.toList (MR.diagramTables diag)
+diagramToSQL diag =
+  toLazyText . mconcat $
+    [bldCreateTable, bldAddForeignKeys, bldCreateIndexes, bldComments]
+      <*> Set.toList (MR.diagramTables diag)
 
 bldCreateTable :: MR.Table -> Builder
 bldCreateTable MR.Table {MR.tableName = tn, MR.tableAttributes = attrs, MR.tablePK = pk, MR.tableNNs = nns, MR.tableCKs = cks, MR.tableUQs = uqs} =
   mconcat
     [ textsToBld ["CREATE TABLE ", tn, "\n(\n"],
       bldIntercalate (fromLazyText ",\n") $
-        (bldAttr <$> attrs) <>
-        bldPK <>
-        (bldUQ <$> uqs) <>
-        (bldCK <$> cks)
-     ,fromLazyText "\n);\n\n"
+        (bldAttr <$> attrs)
+          <> bldPK
+          <> (bldUQ <$> uqs)
+          <> (bldCK <$> cks),
+      fromLazyText "\n);\n\n"
     ]
   where
-    bldAttr attr = mconcat
-      [
-       fromLazyText $ MR.attributeName attr
-      ,singleton ' '
-      ,case MR.attributeType attr of
-         Just t -> fromLazyText t
-         Nothing -> mempty
-      ,if MR.attributeName attr `elem` fmap MR.nnAttributeName nns
-         then fromLazyText " NOT NULL"
-         else mempty
-      ]
+    bldAttr attr =
+      mconcat
+        [ fromLazyText $ MR.attributeName attr,
+          singleton ' ',
+          case MR.attributeType attr of
+            Just t -> fromLazyText t
+            Nothing -> mempty,
+          if MR.attributeName attr `elem` fmap MR.nnAttributeName nns
+            then fromLazyText " NOT NULL"
+            else mempty
+        ]
     bldPK
       | [] == MR.pkAttributeNames pk = []
-      | otherwise = [mconcat
-                      [
-                       fromLazyText "PRIMARY KEY("
-                      ,bldCSV $ fromLazyText <$> MR.pkAttributeNames pk
-                      ,singleton ')'
-                      ]]
-    bldCK ck = mconcat
-                [
-                 fromLazyText "CHECK("
-                ,fromLazyText $ MR.ckSQLCondition ck
-                ,singleton ')'
-                ]
-    bldUQ uq = mconcat
-                [
-                 fromLazyText "UNIQUE("
-                ,bldCSV $ fromLazyText <$> MR.uqAttributeNames uq
-                ,singleton ')'
-                ]
+      | otherwise =
+        [ mconcat
+            [ fromLazyText "PRIMARY KEY(",
+              bldCSV $ fromLazyText <$> MR.pkAttributeNames pk,
+              singleton ')'
+            ]
+        ]
+    bldCK ck =
+      mconcat
+        [ fromLazyText "CHECK(",
+          fromLazyText $ MR.ckSQLCondition ck,
+          singleton ')'
+        ]
+    bldUQ uq =
+      mconcat
+        [ fromLazyText "UNIQUE(",
+          bldCSV $ fromLazyText <$> MR.uqAttributeNames uq,
+          singleton ')'
+        ]
 
 bldAddForeignKeys :: MR.Table -> Builder
 bldAddForeignKeys MR.Table {MR.tableFKs = fks, MR.tableName = tn} =
@@ -97,7 +99,7 @@ bldTableComment tn (Just c) =
 bldTableComment _ _ = mempty
 
 bldAttributeComment :: MR.TableName -> MR.Attribute -> Builder
-bldAttributeComment tn MR.Attribute{MR.attributeName = an, MR.attributeComment = Just c} =
+bldAttributeComment tn MR.Attribute {MR.attributeName = an, MR.attributeComment = Just c} =
   textsToBld ["COMMENT ON COLUMN ", tn, ".", an, " IS \"", c, "\";\n"]
 bldAttributeComment _ _ = mempty
 
@@ -109,4 +111,3 @@ bldCSV = bldIntercalate $ singleton ','
 
 bldIntercalate :: Builder -> [Builder] -> Builder
 bldIntercalate b = mconcat . intersperse b
-

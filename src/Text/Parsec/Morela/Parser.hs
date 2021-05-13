@@ -86,7 +86,7 @@ uniqueIndex = do
     Just $
       I {iAttributeNames = as, iIsUnique = True}
 
-helperUniquesAndIndexes :: String -> Parser[AttributeName]
+helperUniquesAndIndexes :: String -> Parser [AttributeName]
 helperUniquesAndIndexes cmd = do
   _ <- string cmd
   spacesNoNew
@@ -153,10 +153,9 @@ typeDeclaration :: Parser Text
 typeDeclaration = do
   spacesNoNew
   let p =
-        satisfy (\c -> c `elem` ['_',',','(',')'] || isAlphaNum c)
+        satisfy (\c -> c `elem` ['_', ',', '(', ')'] || isAlphaNum c)
           <?> "letter, digit, underscore, comma or bracket"
   fmap pack (many1 p)
-
 
 eolComment :: Parser ()
 eolComment = spacesNoNew >> (eol <|> void comment)

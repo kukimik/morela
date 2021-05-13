@@ -28,7 +28,7 @@ toDiagram xs = do
     step (d, t@(Just Table {})) T {..} =
       Right
         ( addMaybeTable d t,
-          Just $ (emptyTable tName){ tableComment = tComment }
+          Just $ (emptyTable tName) {tableComment = tComment}
         )
     step (d, Just t@Table {}) A {..} =
       -- TODO: the list appending below is evil, fix this

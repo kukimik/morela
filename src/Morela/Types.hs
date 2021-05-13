@@ -86,11 +86,10 @@ data UQConstraint = UQConstraint
   deriving (Eq, Show)
 
 data Index = Index
-  {
-   ixAttributeNames :: [AttributeName],
-   ixIsUnique :: Bool, -- TODO: maybe encode this in type?
-   ixStyleName :: Maybe StyleName,
-   ixComment :: Maybe Comment
+  { ixAttributeNames :: [AttributeName],
+    ixIsUnique :: Bool, -- TODO: maybe encode this in type?
+    ixStyleName :: Maybe StyleName,
+    ixComment :: Maybe Comment
   }
   deriving (Eq, Show)
 

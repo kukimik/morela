@@ -16,22 +16,25 @@ diagramToDotGraph :: MR.Diagram -> G.DotGraph L.Text
 diagramToDotGraph d = T.digraph' $ do
   T.graphAttrs
     [ A.RankDir A.FromLeft,
-      A.Splines A.SplineEdges,
+      A.Splines A.PolyLine,
       A.Overlap A.VoronoiOverlap,
       --A.NodeSep 1,
       A.ESep (A.DVal 0.1),
       --A.Sep (A.DVal 1),
       --A.MinDist 1,
       A.Layout A.Neato,
-      A.Mode A.Hier,
-      A.Model A.SubSet
+      --A.Mode A.Hier,
+      --A.Model A.SubSet,
+      A.Dim 3
     ]
   T.nodeAttrs
     [ A.Shape A.PlainText
     ]
   T.edgeAttrs
-    [ A.Color [A.toWC $ A.toColor R.Gray50], -- easier to read labels
-      --A.MinLen 2, -- give some breathing room
+    [ --A.Color [A.toWC $ A.toColor R.Gray50], -- easier to read labels
+      --A.MinLen 3, -- give some breathing room
+      A.ArrowSize 1.5,
+      A.PenWidth 1.5,
       A.Style [A.SItem A.Solid []]
     ]
   mapM_ tableToDot (MR.diagramTables d)
@@ -59,13 +62,16 @@ constraintsToEdge tabName nns uqs pk fk =
   edge
     tabName
     (MR.fkReferencedTableName fk)
-    [ A.Dir A.Both,
+    ([ A.Dir A.Both,
       A.ArrowHead $ A.AType [(A.noMods, A.Normal)],
       A.ArrowTail $ A.AType [(A.noMods, arrowTailType)],
-      -- ,A.HeadPort () -- opracuj jak to ładnie zrobić, żeby się do odpowiednich więzów doklejało! zmiana typów...
-      --,A.TailPort $ A.LabelledPort (toPortName tabName $ fkToText fk) (Just A.NoCP)
       A.Style [A.SItem edgeStyle []]
     ]
+    -- <>
+    -- if tabName == MR.fkReferencedTableName fk
+    --   then [A.HeadPort $ A.CompassPoint A.East, A.TailPort $ A.CompassPoint A.North ]
+    --  else []
+    )
   where
     attrs :: Set.Set MR.AttributeName
     attrs = Set.fromList . fmap fst . MR.fkAttributeMapping $ fk
@@ -85,18 +91,21 @@ tableToHTMLLabel :: MR.Table -> H.Label
 tableToHTMLLabel tab =
   H.Table
     H.HTable
-      { H.tableFontAttrs = Nothing,
-        H.tableAttrs = [H.CellBorder 0, H.Border 1],
+      { H.tableFontAttrs = Just [H.Face "Times-Roman"],
+        H.tableAttrs = [H.CellBorder 0, H.CellPadding 4, H.Border 1],
         H.tableRows =
-          [headerRow tabName]
-            <> [H.HorizontalRule]
-            <> attributeRows
-            <> [H.HorizontalRule]
-            <> [pkRow tabName $ MR.tablePK tab]
-            <> uqRows
-            <> ckRows
-            <> fkRows
-            <> indexRows
+          mconcat
+          [
+           [headerRow tabName $ fromMaybe tabName (MR.tableComment tab)]
+          ,[H.HorizontalRule]
+          ,attributeRows
+          ,[H.HorizontalRule] -- TODO: don't add if there are no constraints
+          ,[pkRow tabName $ MR.tablePK tab] -- TODO: remove this?
+          ,uqRows
+          ,ckRows
+          ,fkRows
+          ,indexRows
+          ]
       }
   where
     tabName = MR.tableName tab
@@ -109,13 +118,18 @@ tableToHTMLLabel tab =
 attributeRow :: MR.PKConstraint -> [MR.NNConstraint] -> MR.Attribute -> H.Row
 attributeRow pk nns attr =
   H.Cells
-    [ H.LabelCell [H.Align H.HLeft]
+    [ H.LabelCell [H.Align H.HLeft, H.HRef "#", H.Title $ fromMaybe (MR.attributeName attr) (MR.attributeComment attr)]
         . H.Text
+        . (:[])
+        . H.Font [H.PointSize 14.0]
         . maybeAddFormat pkFormat
         . maybeAddFormat nnFormat
         $ [H.Str attrName],
-      H.LabelCell [H.Align H.HLeft] $
-        H.Text [H.Str attrType]
+      H.LabelCell [H.Align H.HLeft]
+        . H.Text
+        . (:[])
+        . H.Font [H.PointSize 14.0]
+        $ [H.Str attrType]
     ]
   where
     attrType = fromMaybe "(?)" (MR.attributeType attr)
@@ -130,11 +144,13 @@ attributeRow pk nns attr =
       | isNN = Just H.Bold
       | otherwise = Nothing
 
-headerRow :: MR.TableName -> H.Row
-headerRow tn =
+headerRow :: MR.TableName -> MR.Comment -> H.Row
+headerRow tn cmt =
   H.Cells
-    [ H.LabelCell [H.ColSpan 2, H.Align H.HCenter]
+    [ H.LabelCell [H.ColSpan 2, H.Align H.HCenter, H.Title cmt, H.HRef "#"]
         . H.Text
+        . (:[])
+        . H.Font [H.PointSize 22.0]
         $ addFormat H.Bold [H.Str tn]
     ]
 

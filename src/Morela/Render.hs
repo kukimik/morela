@@ -18,18 +18,20 @@ diagramToDotGraph d = T.digraph' $ do
     [ A.RankDir A.FromLeft,
       A.Splines A.SplineEdges,
       A.Overlap A.VoronoiOverlap,
-      A.NodeSep 1,
-      A.ESep (A.DVal 1),
-      A.Sep (A.DVal 1),
-      A.MinDist 1,
-      A.Layout A.Neato
+      --A.NodeSep 1,
+      A.ESep (A.DVal 0.1),
+      --A.Sep (A.DVal 1),
+      --A.MinDist 1,
+      A.Layout A.Neato,
+      A.Mode A.Hier,
+      A.Model A.SubSet
     ]
   T.nodeAttrs
     [ A.Shape A.PlainText
     ]
   T.edgeAttrs
     [ A.Color [A.toWC $ A.toColor R.Gray50], -- easier to read labels
-    --A.MinLen 2, -- give some breathing room
+      --A.MinLen 2, -- give some breathing room
       A.Style [A.SItem A.Solid []]
     ]
   mapM_ tableToDot (MR.diagramTables d)
@@ -171,12 +173,11 @@ fkToText fk =
     (a1, a2) = unzip $ MR.fkAttributeMapping fk
 
 indexRow :: MR.Index -> H.Row
-indexRow ix =
-  oneCellRow [] $
-    (if MR.ixIsUnique ix then "UX" else "IX")
-      <> "("
-      <> toCSV (MR.ixAttributeNames ix)
-      <> ")"
+indexRow ix = oneCellRow [] $
+  (if MR.ixIsUnique ix then "UX" else "IX") <>
+  "(" <>
+  toCSV (MR.ixAttributeNames ix) <>
+  ")"
 
 toPortName :: MR.TableName -> L.Text -> A.PortName
 toPortName tn txt = A.PN $ prefixTableName tn txt

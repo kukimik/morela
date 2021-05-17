@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Morela.Types
   ( AttributeName,
     ConstraintName,
@@ -124,10 +126,10 @@ data Diagram = Diagram
 emptyDiagram :: Diagram
 emptyDiagram = Diagram {diagramTables = S.empty, diagramStyles = M.empty}
 
-emptyTable :: TableName -> Table
-emptyTable tn =
+emptyTable :: Table
+emptyTable =
   Table
-    { tableName = tn,
+    { tableName = "",
       tableAttributes = empty,
       tableComment = empty,
       tablePK = PKConstraint {pkAttributeNames = empty},

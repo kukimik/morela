@@ -15,26 +15,23 @@ import qualified Morela.Types as MR
 diagramToDotGraph :: MR.Diagram -> G.DotGraph L.Text
 diagramToDotGraph d = T.digraph' $ do
   T.graphAttrs
-    [ A.RankDir A.FromLeft,
-      A.Splines A.PolyLine,
+    [ A.Splines A.PolyLine,
       A.Overlap A.VoronoiOverlap,
-      --A.NodeSep 1,
+      A.NodeSep 1,
       A.ESep (A.DVal 0.1),
-      --A.Sep (A.DVal 1),
-      --A.MinDist 1,
-      A.Layout A.Neato,
+      A.Sep (A.DVal 0),
+      A.MinDist 1,
+      A.Layout A.Dot
       --A.Mode A.Hier,
       --A.Model A.SubSet,
-      A.Dim 3
+      --A.Dim 3
     ]
   T.nodeAttrs
     [ A.Shape A.PlainText
     ]
   T.edgeAttrs
-    [ --A.Color [A.toWC $ A.toColor R.Gray50], -- easier to read labels
-      --A.MinLen 3, -- give some breathing room
-      A.ArrowSize 1.5,
-      A.PenWidth 1.5,
+    [ A.Color [A.toWC $ A.toColor R.Gray50], -- easier to read labels
+      A.MinLen 7, -- give some breathing room
       A.Style [A.SItem A.Solid []]
     ]
   mapM_ tableToDot (MR.diagramTables d)
@@ -63,9 +60,10 @@ constraintsToEdge tabName nns uqs pk fk =
     tabName
     (MR.fkReferencedTableName fk)
     ([ A.Dir A.Both,
-      A.ArrowHead $ A.AType [(A.noMods, A.Normal)],
+      A.ArrowHead $ A.AType [(A.noMods, A.Vee)],
       A.ArrowTail $ A.AType [(A.noMods, arrowTailType)],
       A.Style [A.SItem edgeStyle []]
+ --    ,A.TailPort $ A.LabelledPort (toPortName tabName $ fkToText fk) (Just A.NoCP)
     ]
     -- <>
     -- if tabName == MR.fkReferencedTableName fk

@@ -23,12 +23,12 @@ toDiagram xs = do
     checkConstraints :: Diagram -> Either String ()
     checkConstraints _ = Right () -- TODO: check whether constraints are valid
     step :: (Diagram, Maybe Table) -> AST -> Either String (Diagram, Maybe Table)
-    step (d, Nothing) T {..} = Right (d, Just $ emptyTable tName)
+    step (d, Nothing) T {..} = Right (d, Just emptyTable{tableName = tName, tableComment = tComment})
     step (_, Nothing) _ = Left "Attribute or constraint comes before first table."
     step (d, t@(Just Table {})) T {..} =
       Right
         ( addMaybeTable d t,
-          Just $ (emptyTable tName) {tableComment = tComment}
+          Just emptyTable{tableName = tName, tableComment = tComment}
         )
     step (d, Just t@Table {}) A {..} =
       -- TODO: the list appending below is evil, fix this

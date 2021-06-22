@@ -39,7 +39,7 @@ document = do
 table :: Parser (Maybe AST)
 table = do
   n <- between (char '[') (char ']') ident
-  c <- option Nothing (Just <$> dbObjectComment)
+  c <- optionMaybe $ try dbObjectComment
   eolComment
   return $ Just $ T {tName = n, tComment = c}
 
@@ -48,8 +48,8 @@ attribute = do
   attrConstraints <- many $ oneOf "*! \t"
   let (ispk, isnn) = ('*' `elem` attrConstraints, '!' `elem` attrConstraints)
   n <- ident
-  t <- option Nothing (Just <$> typeDeclaration)
-  c <- option Nothing (Just <$> dbObjectComment)
+  t <- optionMaybe $ try typeDeclaration
+  c <- optionMaybe $ try dbObjectComment
   eolComment
   return $
     Just $
@@ -59,7 +59,7 @@ checkConstraint :: Parser (Maybe AST)
 checkConstraint = do
   _ <- string "&CK"
   spacesNoNew
-  c <- identQuoted
+  c <- multilineQuoted
   eolComment
   return $
     Just $
@@ -116,7 +116,7 @@ attributesList = sepBy1 ident (char ',')
 comment :: Parser (Maybe AST)
 comment = do
   _ <- char '#'
-  _ <- manyTill anyChar $ try eol
+  _ <- manyTill anyChar $ try eofOrEol
   return Nothing
 
 dbObjectComment :: Parser Text
@@ -155,9 +155,12 @@ identNoSpace = do
 multilineQuoted :: Parser Text
 multilineQuoted = do
   quote <- quotationMark
-  let p = satisfy (\c -> c /= quote && not (isControl c))
-      q = char '\\' >> eol >> spacesNoNew >>  char '\\' >> return '\n'
-  n <- fmap pack (many1 (try q <|> p))
+  let
+    contentChar =
+      satisfy (\c -> c /= quote && not (isControl c))
+    nextline =
+      char '\\' >> eol >> spacesNoNew >>  char '\\' >> return '\n'
+  n <- fmap pack (many1 (try nextline <|> contentChar))
   _ <- char quote
   return n
 
@@ -170,13 +173,15 @@ typeDeclaration = do
   fmap pack (many1 p)
 
 eolComment :: Parser ()
-eolComment = spacesNoNew >> (eol <|> void comment)
+eolComment = spacesNoNew >> (eofOrEol <|> void comment)
 
 spacesNoNew :: Parser ()
 spacesNoNew = skipMany $ satisfy $ \c -> c /= '\n' && c /= '\r' && isSpace c
 
 eol :: Parser ()
-eol =
-  eof <|> do
-    c <- oneOf "\n\r"
-    when (c == '\r') $ optional $ char '\n'
+eol = do
+  c <- oneOf "\n\r"
+  when (c == '\r') $ optional $ char '\n'
+
+eofOrEol :: Parser ()
+eofOrEol = eof <|> eol

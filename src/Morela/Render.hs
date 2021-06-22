@@ -98,7 +98,7 @@ tableToHTMLLabel tab =
           ,[H.HorizontalRule]
           ,attributeRows
           ,[H.HorizontalRule] -- TODO: don't add if there are no constraints
-          ,[pkRow tabName $ MR.tablePK tab] -- TODO: remove this?
+          ,pkRows -- TODO: remove this?
           ,uqRows
           ,ckRows
           ,fkRows
@@ -111,6 +111,8 @@ tableToHTMLLabel tab =
     uqRows = uqRow tabName <$> MR.tableUQs tab
     ckRows = ckRow <$> MR.tableCKs tab
     fkRows = fkRow tabName <$> MR.tableFKs tab
+    pkRows = (MR.pkAttributeNames $ MR.tablePK tab)
+              *> [pkRow tabName $ MR.tablePK tab]
     indexRows = indexRow <$> MR.tableIndexes tab
 
 attributeRow :: MR.PKConstraint -> [MR.NNConstraint] -> MR.Attribute -> H.Row

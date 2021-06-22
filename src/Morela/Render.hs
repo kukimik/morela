@@ -95,19 +95,16 @@ tableToHTMLLabel tab =
           mconcat
           [
            [headerRow tabName $ fromMaybe tabName (MR.tableComment tab)]
-          ,[H.HorizontalRule]
-          ,attributeRows
-          ,[H.HorizontalRule] -- TODO: don't add if there are no constraints
-          ,pkRows -- TODO: remove this?
-          ,uqRows
-          ,ckRows
-          ,fkRows
-          ,indexRows
+          ,prependHorizontalRule attributeRows
+          ,prependHorizontalRule constraintRows
           ]
       }
   where
     tabName = MR.tableName tab
+    prependHorizontalRule [] = []
+    prependHorizontalRule xs = H.HorizontalRule : xs
     attributeRows = attributeRow (MR.tablePK tab) (MR.tableNNs tab) <$> MR.tableAttributes tab
+    constraintRows = mconcat [pkRows,uqRows,ckRows,fkRows,indexRows]
     uqRows = uqRow tabName <$> MR.tableUQs tab
     ckRows = ckRow <$> MR.tableCKs tab
     fkRows = fkRow tabName <$> MR.tableFKs tab

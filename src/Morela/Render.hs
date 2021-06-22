@@ -15,15 +15,15 @@ import qualified Morela.Types as MR
 diagramToDotGraph :: MR.Diagram -> G.DotGraph L.Text
 diagramToDotGraph d = T.digraph' $ do
   T.graphAttrs
-    [ A.Splines A.PolyLine,
+    [ A.Splines A.SplineEdges,
       A.Overlap A.VoronoiOverlap,
       A.NodeSep 1,
       A.ESep (A.DVal 0.1),
       A.Sep (A.DVal 0),
       A.MinDist 1,
-      A.Layout A.Dot
-      --A.Mode A.Hier,
-      --A.Model A.SubSet,
+      A.Layout A.Dot,
+      A.Mode A.Hier,
+      A.Model A.SubSet
       --A.Dim 3
     ]
   T.nodeAttrs
@@ -31,7 +31,7 @@ diagramToDotGraph d = T.digraph' $ do
     ]
   T.edgeAttrs
     [ A.Color [A.toWC $ A.toColor R.Gray50], -- easier to read labels
-      A.MinLen 7, -- give some breathing room
+      A.MinLen 2, -- give some breathing room
       A.Style [A.SItem A.Solid []]
     ]
   mapM_ tableToDot (MR.diagramTables d)
@@ -61,7 +61,7 @@ constraintsToEdge tabName nns uqs pk fk =
     (MR.fkReferencedTableName fk)
     ([ A.Dir A.Both,
       A.ArrowHead $ A.AType [(A.noMods, A.Vee)],
-      A.ArrowTail $ A.AType [(A.noMods, arrowTailType)],
+      A.ArrowTail $ A.AType [(A.noMods, arrowTailType),(A.noMods, A.Tee)],
       A.Style [A.SItem edgeStyle []]
  --    ,A.TailPort $ A.LabelledPort (toPortName tabName $ fkToText fk) (Just A.NoCP)
     ]
@@ -79,7 +79,7 @@ constraintsToEdge tabName nns uqs pk fk =
     isNN = attrs `Set.isSubsetOf` (pkAttrs `Set.union` nnAttrs)
     isUQ = (`Set.isSubsetOf` attrs) `any` (pkAttrs : uqsAttrs)
     arrowTailType
-      | isUQ = A.NoArrow
+      | isUQ = A.Tee
       | otherwise = A.Crow
     edgeStyle
       | isNN = A.Solid

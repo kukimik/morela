@@ -123,7 +123,7 @@ dbObjectComment :: Parser Text
 dbObjectComment = do
   spacesNoNew
   _ <- char '^'
-  identQuoted
+  multilineQuoted
 
 ident :: Parser Text
 ident = do
@@ -132,9 +132,12 @@ ident = do
   spacesNoNew
   return n
 
+quotationMark :: Parser Char
+quotationMark = oneOf "'\"`"
+
 identQuoted :: Parser Text
 identQuoted = do
-  quote <- oneOf "'\"`"
+  quote <- quotationMark
   let p =
         satisfy (\c -> c /= quote && not (isControl c))
           <?> "any character except " <> [quote] <> " or control characters"
@@ -148,6 +151,15 @@ identNoSpace = do
         satisfy (\c -> c == '_' || isAlphaNum c)
           <?> "letter, digit or underscore"
   fmap pack (many1 p)
+
+multilineQuoted :: Parser Text
+multilineQuoted = do
+  quote <- quotationMark
+  let p = satisfy (\c -> c /= quote && not (isControl c))
+      q = char '\\' >> eol >> spacesNoNew >>  char '\\' >> return '\n'
+  n <- fmap pack (many1 (try q <|> p))
+  _ <- char quote
+  return n
 
 typeDeclaration :: Parser Text
 typeDeclaration = do

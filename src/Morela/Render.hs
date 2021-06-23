@@ -2,15 +2,27 @@
 
 module Morela.Render (diagramToDotGraph) where
 
+import Control.Monad(join)
 import qualified Data.GraphViz.Attributes as R
 import qualified Data.GraphViz.Attributes.Complete as A
 import qualified Data.GraphViz.Attributes.HTML as H
 import qualified Data.GraphViz.Types.Generalised as G
 import Data.GraphViz.Types.Monadic as T
+import Data.List (intersperse)
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Text.Lazy as L
 import qualified Morela.Types as MR
+import Text.Wrap(wrapTextToLines,defaultWrapSettings)
+
+wrap :: L.Text -> [L.Text]
+wrap = join . fmap (fmap L.fromStrict . (wrapTextToLines defaultWrapSettings 80) . L.toStrict) . L.lines
+
+linesToHTMLText :: [L.Text] -> H.Text
+linesToHTMLText = (intersperse (H.Newline [])) . fmap H.Str
+
+wrappedHTMLText :: L.Text -> H.Text
+wrappedHTMLText = linesToHTMLText . wrap
 
 diagramToDotGraph :: MR.Diagram -> G.DotGraph L.Text
 diagramToDotGraph d = T.digraph' $ do
@@ -97,6 +109,19 @@ tableToHTMLLabel tab =
            [headerRow tabName $ fromMaybe tabName (MR.tableComment tab)]
           ,prependHorizontalRule attributeRows
           ,prependHorizontalRule constraintRows
+          ,maybe
+            []
+            (\txt ->
+                [H.HorizontalRule
+                ,H.Cells
+                  [ H.LabelCell [H.ColSpan 2, H.Align H.HLeft, H.BAlign H.HLeft]
+                      . H.Text
+                      . (:[])
+                      . H.Font [H.PointSize 12.0]
+                      . wrappedHTMLText $ txt
+                  ]]
+            )
+            (MR.tableComment tab)
           ]
       }
   where

@@ -43,3 +43,4 @@ executable morela
                , optparse-applicative >=0.14 && <0.17
                , parsec == 3.1.*
                , text == 1.*
+               , word-wrap >= 0.4.1 && < 0.5

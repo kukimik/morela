@@ -15,14 +15,14 @@ import qualified Data.Text.Lazy as L
 import qualified Morela.Types as MR
 import Text.Wrap(wrapTextToLines,defaultWrapSettings)
 
-wrap :: L.Text -> [L.Text]
-wrap = join . fmap (fmap L.fromStrict . (wrapTextToLines defaultWrapSettings 80) . L.toStrict) . L.lines
+wrap :: Int -> L.Text -> [L.Text]
+wrap n = join . fmap (fmap L.fromStrict . (wrapTextToLines defaultWrapSettings n) . L.toStrict) . L.lines
 
 linesToHTMLText :: [L.Text] -> H.Text
 linesToHTMLText = (intersperse (H.Newline [])) . fmap H.Str
 
-wrappedHTMLText :: L.Text -> H.Text
-wrappedHTMLText = linesToHTMLText . wrap
+wrappedHTMLText :: Int -> L.Text -> H.Text
+wrappedHTMLText n = linesToHTMLText . (wrap n)
 
 diagramToDotGraph :: MR.Diagram -> G.DotGraph L.Text
 diagramToDotGraph d = T.digraph' $ do
@@ -114,11 +114,11 @@ tableToHTMLLabel tab =
             (\txt ->
                 [H.HorizontalRule
                 ,H.Cells
-                  [ H.LabelCell [H.ColSpan 2, H.Align H.HLeft, H.BAlign H.HLeft]
+                  [ H.LabelCell [H.ColSpan 3, H.Align H.HLeft, H.BAlign H.HLeft]
                       . H.Text
                       . (:[])
-                      . H.Font [H.PointSize 12.0]
-                      . wrappedHTMLText $ txt
+                      . H.Font [H.PointSize 13.0]
+                      . wrappedHTMLText 80 $ txt
                   ]]
             )
             (MR.tableComment tab)
@@ -151,7 +151,14 @@ attributeRow pk nns attr =
         . H.Text
         . (:[])
         . H.Font [H.PointSize 14.0]
-        $ [H.Str attrType]
+        $ [H.Str attrType],
+      H.LabelCell [H.Align H.HLeft, H.BAlign H.HLeft]
+        . H.Text
+        . (:[])
+        . H.Font [H.PointSize 13.0]
+        $ case MR.attributeComment attr of
+            Nothing -> [H.Str " "]
+            Just txt -> wrappedHTMLText 80 txt
     ]
   where
     attrType = fromMaybe "(?)" (MR.attributeType attr)
@@ -169,7 +176,7 @@ attributeRow pk nns attr =
 headerRow :: MR.TableName -> MR.Comment -> H.Row
 headerRow tn cmt =
   H.Cells
-    [ H.LabelCell [H.ColSpan 2, H.Align H.HCenter, H.Title cmt, H.HRef "#"]
+    [ H.LabelCell [H.ColSpan 3, H.Align H.HCenter, H.Title cmt, H.HRef "#"]
         . H.Text
         . (:[])
         . H.Font [H.PointSize 22.0]
@@ -221,7 +228,7 @@ toPortName :: MR.TableName -> L.Text -> A.PortName
 toPortName tn txt = A.PN $ prefixTableName tn txt
 
 toCSV :: [L.Text] -> L.Text
-toCSV = L.intercalate ","
+toCSV = L.intercalate ", "
 
 prefixTableName :: MR.TableName -> L.Text -> L.Text
 prefixTableName tabName txt = tabName <> "." <> txt
@@ -229,7 +236,7 @@ prefixTableName tabName txt = tabName <> "." <> txt
 oneCellRow :: H.Attributes -> L.Text -> H.Row
 oneCellRow cellAttr txt =
   H.Cells
-    [ H.LabelCell (H.ColSpan 2 : H.Align H.HLeft : cellAttr) $ H.Text [H.Str txt]
+    [ H.LabelCell (H.ColSpan 3 : H.Align H.HLeft : H.BAlign H.HLeft : cellAttr) $ H.Text (wrappedHTMLText 160 txt)-- [H.Str txt]
     ]
 
 addFormat :: H.Format -> H.Text -> H.Text

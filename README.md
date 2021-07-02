@@ -28,5 +28,7 @@ on Unix and OS X, `%APPDATA%\local\bin` on Windows.
 ### Usage
 
 ```bash
-morela < input.mrl > output.pdf
+morela [-f|--output-format FORMAT] < input.mrl > output_file
 ```
+
+Available output formats are: dot,eps,fig,gif,jpeg,pdf,png,ps,ps2,svg,svgz,tiff,webp,sql.

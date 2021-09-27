@@ -44,3 +44,4 @@ executable morela
                , parsec == 3.1.*
                , text == 1.*
                , word-wrap >= 0.4.1 && < 0.5
+               , mtl >= 2.2.2 && < 2.3
